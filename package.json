@@ -22,6 +22,7 @@
     "db:studio": "pnpm --filter @bav/db prisma:studio",
     "db:seed": "pnpm --filter @bav/db seed",
     "ingest:ebay": "pnpm --filter @bav/db ingest:ebay",
+    "ingest:public": "pnpm --filter @bav/db ingest:public",
     "clean": "turbo run clean && rm -rf node_modules .turbo"
   },
   "devDependencies": {
