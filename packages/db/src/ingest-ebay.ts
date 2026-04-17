@@ -1,6 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+dotenv.config();
 import crypto from 'node:crypto';
 import { prisma } from './prisma';
 import { connectMongo, disconnectMongo } from './mongo';

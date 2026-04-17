@@ -7,12 +7,18 @@ import { formatGbp } from '@bav/lib';
 
 export const dynamic = 'force-dynamic';
 
+type Catalog = {
+  images?: Array<{ url: string; alt: string; isPrimary?: boolean }>;
+  specs?: Record<string, unknown>;
+};
+
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const data = await getProductBySlug(params.slug);
   if (!data) notFound();
-  const { product, catalog } = data;
+  const { product } = data;
+  const catalog = data.catalog as Catalog | null;
 
-  const images = (catalog?.images ?? []) as Array<{ url: string; alt: string; isPrimary?: boolean }>;
+  const images = catalog?.images ?? [];
   const primary = images.find((i) => i.isPrimary) ?? images[0];
 
   return (

@@ -33,3 +33,6 @@ public/return-photos/
 tmp/
 
 prisma/migrations/dev.db*
+
+.vercel
+.env*.local

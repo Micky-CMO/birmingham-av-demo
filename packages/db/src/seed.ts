@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'node:path';
+// Load .env.local from monorepo root (where Vercel CLI writes it) plus local .env fallbacks
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+dotenv.config();
 import crypto from 'node:crypto';
 import { prisma } from './prisma';
 import { connectMongo, disconnectMongo } from './mongo';
@@ -453,21 +459,23 @@ async function main() {
       },
     });
 
-    await ProductCatalog.findOneAndUpdate(
-      { postgresProductId: product.productId },
-      {
-        $set: {
-          postgresProductId: product.productId,
-          sku,
-          slug,
-          images: [0, 1, 2].map((n) => ({ url: imageFor(p.image, n), alt: p.title, isPrimary: n === 0 })),
-          specs: p.specs,
-          tags: [p.condition, ...(p.specs.cpu ? [p.specs.cpu.family] : []), ...(p.specs.gpu ? [p.specs.gpu.model] : [])],
-          seo: { metaTitle: `${p.title} | Birmingham AV`, metaDescription: p.subtitle, keywords: [p.category] },
+    if (process.env.MONGO_URL) {
+      await ProductCatalog.findOneAndUpdate(
+        { postgresProductId: product.productId },
+        {
+          $set: {
+            postgresProductId: product.productId,
+            sku,
+            slug,
+            images: [0, 1, 2].map((n) => ({ url: imageFor(p.image, n), alt: p.title, isPrimary: n === 0 })),
+            specs: p.specs,
+            tags: [p.condition, ...(p.specs.cpu ? [p.specs.cpu.family] : []), ...(p.specs.gpu ? [p.specs.gpu.model] : [])],
+            seo: { metaTitle: `${p.title} | Birmingham AV`, metaDescription: p.subtitle, keywords: [p.category] },
+          },
         },
-      },
-      { upsert: true, new: true },
-    );
+        { upsert: true, new: true },
+      ).catch((err) => console.warn('[seed] mongo write skipped:', (err as Error).message));
+    }
 
     productIds.push({ id: product.productId, builderId, price: p.price, title: p.title, slug });
   }
