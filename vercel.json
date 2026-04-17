@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install && pnpm db:generate && pnpm --filter @bav/web build",
+  "installCommand": "npm install -g pnpm@9.15.0",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
+  "env": {
+    "BAV_DEMO_MODE": "true"
+  },
+  "build": {
+    "env": {
+      "BAV_DEMO_MODE": "true",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "regions": ["lhr1"]
+}

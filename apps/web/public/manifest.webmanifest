@@ -1,0 +1,28 @@
+{
+  "name": "Birmingham AV",
+  "short_name": "BAV",
+  "description": "Refurbished PCs, built by people who know them. Tested, warrantied, and shipped from Birmingham.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#1EB53A",
+  "lang": "en-GB",
+  "categories": ["shopping", "business"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ],
+  "shortcuts": [
+    { "name": "Shop PCs", "short_name": "Shop", "url": "/shop", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Track an order", "short_name": "Orders", "url": "/account", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Start a return", "short_name": "Return", "url": "/returns/new", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    { "src": "/brand/hero-poster.jpg", "sizes": "1920x1080", "type": "image/jpeg", "form_factor": "wide", "label": "Refurbished PCs, built by people who know them." }
+  ],
+  "prefer_related_applications": false
+}

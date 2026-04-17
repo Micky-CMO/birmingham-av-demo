@@ -1,0 +1,39 @@
+{
+  "name": "bav",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "postinstall": "pnpm --filter @bav/db prisma:generate",
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "pnpm --filter @bav/db prisma:generate",
+    "db:migrate": "pnpm --filter @bav/db prisma:migrate",
+    "db:push": "pnpm --filter @bav/db prisma:push",
+    "db:studio": "pnpm --filter @bav/db prisma:studio",
+    "db:seed": "pnpm --filter @bav/db seed",
+    "ingest:ebay": "pnpm --filter @bav/db ingest:ebay",
+    "clean": "turbo run clean && rm -rf node_modules .turbo"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "@types/node": "^22.10.2"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": ["react", "react-dom"]
+    }
+  }
+}

@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --surface: 255 255 255;
+  --canvas: 249 250 251;
+  --ink: 10 10 10;
+  --ink-muted: 107 114 128;
+  --line: 212 212 216;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: 11 13 18;
+  --canvas: 5 5 5;
+  --ink: 249 250 251;
+  --ink-muted: 148 163 184;
+  --line: 34 40 51;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background: rgb(var(--canvas));
+  color: rgb(var(--ink));
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Custom cursor visibility: hide native cursor only on pointer devices */
+@media (hover: hover) {
+  html,
+  body,
+  button,
+  a,
+  [role='button'],
+  input,
+  textarea,
+  select {
+    cursor: none;
+  }
+}
+
+* {
+  border-color: rgb(var(--line) / 0.6);
+}
+
+::selection {
+  background: #1eb53a;
+  color: #0a0a0a;
+}
+
+/* Premium scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--ink) / 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1eb53a;
+  background-clip: padding-box;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Page transition (@starting-style + template.tsx) */
+@supports (transition-behavior: allow-discrete) {
+  .page-transition {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @starting-style {
+    .page-transition {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}
+
+/* Hero gradient mesh */
+.hero-mesh {
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(30, 181, 58, 0.08), transparent 60%),
+    radial-gradient(1000px 500px at 90% 110%, rgba(79, 145, 255, 0.05), transparent 60%);
+}
+
+/* Marquee seam hide */
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}

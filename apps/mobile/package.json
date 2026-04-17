@@ -1,0 +1,9 @@
+{
+  "name": "@bav/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Mobile scaffold pending. Run expo init once React Native side is next on the queue.'",
+    "typecheck": "echo 'no-op until app is scaffolded'"
+  }
+}

@@ -1,0 +1,617 @@
+// Birmingham AV - Postgres schema (Prisma)
+// See SPEC.md section 5.1
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+// ============ Enums ============
+
+enum UserRole {
+  customer
+  builder
+  support_staff
+  admin
+  super_admin
+}
+
+enum BuilderTier {
+  probation
+  standard
+  preferred
+  elite
+}
+
+enum BuilderStatus {
+  active
+  review
+  suspended
+  offboarded
+}
+
+enum OrderStatus {
+  draft
+  pending_payment
+  paid
+  queued
+  in_build
+  qc
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  stripe_card
+  paypal
+  manual
+}
+
+enum BuildStatus {
+  queued
+  in_progress
+  qc
+  completed
+  failed
+}
+
+enum RmaStatus {
+  requested
+  approved
+  rejected
+  in_transit
+  received
+  refunded
+  resolved
+  escalated
+}
+
+enum RmaReason {
+  dead_on_arrival
+  hardware_fault
+  not_as_described
+  damaged_in_transit
+  changed_mind
+  wrong_item
+  other
+}
+
+enum TicketStatus {
+  open
+  ai_handling
+  escalated_human
+  awaiting_customer
+  resolved
+  closed
+}
+
+enum TicketChannel {
+  web_widget
+  email
+  telegram
+  phone
+}
+
+enum UnitState {
+  planned
+  in_build
+  qc_pending
+  qc_failed
+  ready_to_ship
+  shipped
+  delivered
+  returned
+  rma_in_progress
+  written_off
+}
+
+// ============ Core ============
+
+model User {
+  userId          String    @id @default(uuid()) @map("user_id") @db.Uuid
+  email           String    @unique
+  passwordHash    String?   @map("password_hash")
+  role            UserRole  @default(customer)
+  firstName       String?   @map("first_name")
+  lastName        String?   @map("last_name")
+  phone           String?
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  addresses        UserAddress[]
+  builderProfile   Builder?          @relation("BuilderUser")
+  qcPassedUnits    Unit[]            @relation("QCPassedBy")
+  orders           Order[]
+  cartSessions    CartSession[]
+  reviews          Review[]
+  returns          Return[]
+  ticketsOpened    SupportTicket[]   @relation("TicketUser")
+  ticketsAssigned  SupportTicket[]   @relation("TicketAssignedStaff")
+  messages         SupportMessage[]
+  auditEntries     AuditLog[]
+  builderFlagsAcked BuilderQualityFlagAck[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model UserAddress {
+  addressId    String  @id @default(uuid()) @map("address_id") @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  label        String
+  isDefault    Boolean @default(false) @map("is_default")
+  line1        String  @map("line_1")
+  line2        String? @map("line_2")
+  city         String
+  region       String?
+  postcode     String
+  countryIso2  String  @default("GB") @map("country_iso2")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_addresses")
+}
+
+model WarehouseNode {
+  warehouseNodeId      String  @id @default(uuid()) @map("warehouse_node_id") @db.Uuid
+  nodeCode             String  @unique @map("node_code")
+  locationName         String  @map("location_name")
+  address              Json
+  maxConcurrentBuilds  Int     @default(50) @map("max_concurrent_builds")
+  activeBuildCount     Int     @default(0) @map("active_build_count")
+  isActive             Boolean @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  builders     Builder[]
+  units        Unit[]
+  buildQueues  BuildQueue[]
+
+  @@map("warehouse_nodes")
+}
+
+model Builder {
+  builderId            String         @id @default(uuid()) @map("builder_id") @db.Uuid
+  builderCode          String         @unique @map("builder_code")
+  userId               String         @unique @map("user_id") @db.Uuid
+  warehouseNodeId      String         @map("warehouse_node_id") @db.Uuid
+  displayName          String         @map("display_name")
+  legalName            String?        @map("legal_name")
+  tier                 BuilderTier    @default(standard)
+  status               BuilderStatus  @default(active)
+  joinedAt             DateTime       @default(now()) @map("joined_at")
+  avatarUrl            String?        @map("avatar_url")
+  bio                  String?
+  totalUnitsBuilt      Int            @default(0) @map("total_units_built")
+  totalUnitsSold       Int            @default(0) @map("total_units_sold")
+  totalRmaCount        Int            @default(0) @map("total_rma_count")
+  rmaRateRolling90d    Decimal        @default(0) @map("rma_rate_rolling_90d") @db.Decimal(6, 4)
+  qualityScore         Decimal        @default(0) @map("quality_score") @db.Decimal(4, 2)
+  avgBuildMinutes      Int            @default(0) @map("avg_build_minutes")
+  avgResponseHours     Decimal        @default(0) @map("avg_response_hours") @db.Decimal(6, 2)
+  revenueGbpLifetime   Decimal        @default(0) @map("revenue_gbp_lifetime") @db.Decimal(14, 2)
+  marginGbpLifetime    Decimal        @default(0) @map("margin_gbp_lifetime") @db.Decimal(14, 2)
+  flaggedByAi          Boolean        @default(false) @map("flagged_by_ai")
+  lastFlagReason       String?        @map("last_flag_reason")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  user           User                            @relation("BuilderUser", fields: [userId], references: [userId], onDelete: Cascade)
+  warehouseNode  WarehouseNode                   @relation(fields: [warehouseNodeId], references: [warehouseNodeId])
+  products       Product[]
+  units          Unit[]
+  orderItems     OrderItem[]
+  buildQueues    BuildQueue[]
+  returns        Return[]
+  snapshots      BuilderPerformanceSnapshot[]
+
+  @@index([rmaRateRolling90d(sort: Desc)])
+  @@index([qualityScore(sort: Desc)])
+  @@index([warehouseNodeId])
+  @@index([tier])
+  @@index([status])
+  @@index([flaggedByAi])
+  @@map("builders")
+}
+
+model ProductCategory {
+  categoryId String             @id @default(uuid()) @map("category_id") @db.Uuid
+  slug       String             @unique
+  name       String
+  parentId   String?            @map("parent_id") @db.Uuid
+  sortOrder  Int                @default(0) @map("sort_order")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  parent   ProductCategory?  @relation("CategoryParent", fields: [parentId], references: [categoryId])
+  children ProductCategory[] @relation("CategoryParent")
+  products Product[]
+
+  @@index([parentId])
+  @@index([sortOrder])
+  @@map("product_categories")
+}
+
+model Product {
+  productId        String    @id @default(uuid()) @map("product_id") @db.Uuid
+  sku              String    @unique
+  builderId        String    @map("builder_id") @db.Uuid
+  categoryId       String    @map("category_id") @db.Uuid
+  title            String
+  subtitle         String?
+  slug             String    @unique
+  conditionGrade   String    @map("condition_grade")
+  priceGbp         Decimal   @map("price_gbp") @db.Decimal(10, 2)
+  costGbp          Decimal   @default(0) @map("cost_gbp") @db.Decimal(10, 2)
+  compareAtGbp     Decimal?  @map("compare_at_gbp") @db.Decimal(10, 2)
+  warrantyMonths   Int       @default(12) @map("warranty_months")
+  shippingWeightKg Decimal?  @map("shipping_weight_kg") @db.Decimal(6, 2)
+  isActive         Boolean   @default(true) @map("is_active")
+  isFeatured       Boolean   @default(false) @map("is_featured")
+  ebayListingId    String?   @unique @map("ebay_listing_id")
+  ebaySyncAt       DateTime? @map("ebay_sync_at")
+  mongoSpecId      String?   @map("mongo_spec_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  builder    Builder            @relation(fields: [builderId], references: [builderId])
+  category   ProductCategory    @relation(fields: [categoryId], references: [categoryId])
+  inventory  ProductInventory?
+  units      Unit[]
+  orderItems OrderItem[]
+  returns    Return[]
+  reviews    Review[]
+  tickets    SupportTicket[]
+
+  @@index([builderId])
+  @@index([categoryId])
+  @@index([priceGbp])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([title])
+  @@map("products")
+}
+
+model ProductInventory {
+  productId         String   @id @map("product_id") @db.Uuid
+  stockQty          Int      @default(0) @map("stock_qty")
+  reservedQty       Int      @default(0) @map("reserved_qty")
+  reorderThreshold  Int      @default(1) @map("reorder_threshold")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  @@map("product_inventory")
+}
+
+model Unit {
+  unitId            String      @id @default(uuid()) @map("unit_id") @db.Uuid
+  serialNumber      String      @unique @map("serial_number")
+  productId         String      @map("product_id") @db.Uuid
+  builderId         String      @map("builder_id") @db.Uuid
+  warehouseNodeId   String      @map("warehouse_node_id") @db.Uuid
+  buildStartedAt    DateTime?   @map("build_started_at")
+  buildCompletedAt  DateTime?   @map("build_completed_at")
+  qcPassedAt        DateTime?   @map("qc_passed_at")
+  qcPassedById      String?     @map("qc_passed_by") @db.Uuid
+  qcNotes           String?     @map("qc_notes")
+  currentState      UnitState   @default(planned) @map("current_state")
+  mongoBuildLogId   String?     @map("mongo_build_log_id")
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  product       Product        @relation(fields: [productId], references: [productId])
+  builder       Builder        @relation(fields: [builderId], references: [builderId])
+  warehouseNode WarehouseNode  @relation(fields: [warehouseNodeId], references: [warehouseNodeId])
+  qcPassedBy    User?          @relation("QCPassedBy", fields: [qcPassedById], references: [userId])
+  orderItems    OrderItem[]
+  returns       Return[]
+
+  @@index([productId])
+  @@index([builderId])
+  @@index([currentState])
+  @@map("units")
+}
+
+model Order {
+  orderId            String         @id @default(uuid()) @map("order_id") @db.Uuid
+  orderNumber        String         @unique @map("order_number")
+  userId             String         @map("user_id") @db.Uuid
+  status             OrderStatus    @default(draft)
+  subtotalGbp        Decimal        @default(0) @map("subtotal_gbp") @db.Decimal(12, 2)
+  shippingGbp        Decimal        @default(0) @map("shipping_gbp") @db.Decimal(10, 2)
+  taxGbp             Decimal        @default(0) @map("tax_gbp") @db.Decimal(10, 2)
+  discountGbp        Decimal        @default(0) @map("discount_gbp") @db.Decimal(10, 2)
+  totalGbp           Decimal        @default(0) @map("total_gbp") @db.Decimal(12, 2)
+  currency           String         @default("GBP")
+  paymentMethod      PaymentMethod? @map("payment_method")
+  paymentIntentId    String?        @map("payment_intent_id")
+  paymentCapturedAt  DateTime?      @map("payment_captured_at")
+  shippingAddress    Json?          @map("shipping_address")
+  billingAddress     Json?          @map("billing_address")
+  customerNotes      String?        @map("customer_notes")
+  queuedForBuildAt   DateTime?      @map("queued_for_build_at")
+  shippedAt          DateTime?      @map("shipped_at")
+  deliveredAt        DateTime?      @map("delivered_at")
+  cancelledAt        DateTime?      @map("cancelled_at")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  user        User            @relation(fields: [userId], references: [userId])
+  items       OrderItem[]
+  buildQueues BuildQueue[]
+  returns     Return[]
+  tickets     SupportTicket[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  orderItemId      String   @id @default(uuid()) @map("order_item_id") @db.Uuid
+  orderId          String   @map("order_id") @db.Uuid
+  productId        String   @map("product_id") @db.Uuid
+  builderId        String   @map("builder_id") @db.Uuid
+  unitId           String?  @map("unit_id") @db.Uuid
+  qty              Int      @default(1)
+  pricePerUnitGbp  Decimal  @map("price_per_unit_gbp") @db.Decimal(10, 2)
+  costPerUnitGbp   Decimal  @default(0) @map("cost_per_unit_gbp") @db.Decimal(10, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  order   Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [productId])
+  builder Builder  @relation(fields: [builderId], references: [builderId])
+  unit    Unit?    @relation(fields: [unitId], references: [unitId])
+  returns Return[]
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([builderId])
+  @@map("order_items")
+}
+
+model BuildQueue {
+  buildQueueId      String       @id @default(uuid()) @map("build_queue_id") @db.Uuid
+  orderId           String       @map("order_id") @db.Uuid
+  builderId         String       @map("builder_id") @db.Uuid
+  warehouseNodeId   String       @map("warehouse_node_id") @db.Uuid
+  status            BuildStatus  @default(queued)
+  priority          Int          @default(5)
+  items             Json
+  estimatedMinutes  Int?         @map("estimated_minutes")
+  startedAt         DateTime?    @map("started_at")
+  completedAt       DateTime?    @map("completed_at")
+  failureReason     String?      @map("failure_reason")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  order         Order         @relation(fields: [orderId], references: [orderId])
+  builder       Builder       @relation(fields: [builderId], references: [builderId])
+  warehouseNode WarehouseNode @relation(fields: [warehouseNodeId], references: [warehouseNodeId])
+
+  @@index([builderId, status])
+  @@index([status, priority(sort: Desc)])
+  @@map("build_queue")
+}
+
+model Return {
+  returnId             String     @id @default(uuid()) @map("return_id") @db.Uuid
+  returnNumber         String     @unique @map("return_number")
+  orderItemId          String     @map("order_item_id") @db.Uuid
+  orderId              String     @map("order_id") @db.Uuid
+  unitId               String?    @map("unit_id") @db.Uuid
+  builderId            String     @map("builder_id") @db.Uuid
+  productId            String     @map("product_id") @db.Uuid
+  requestedByUserId    String     @map("requested_by_user_id") @db.Uuid
+  reason               RmaReason
+  reasonDetails        String?    @map("reason_details")
+  status               RmaStatus  @default(requested)
+  refundAmountGbp      Decimal    @default(0) @map("refund_amount_gbp") @db.Decimal(10, 2)
+  restockingFeeGbp     Decimal    @default(0) @map("restocking_fee_gbp") @db.Decimal(10, 2)
+  aiSeverity           Decimal?   @map("ai_severity") @db.Decimal(4, 3)
+  aiFlaggedPattern     String?    @map("ai_flagged_pattern")
+  aiAnalysis           Json?      @map("ai_analysis")
+  resolutionNotes      String?    @map("resolution_notes")
+  approvedAt           DateTime?  @map("approved_at")
+  refundedAt           DateTime?  @map("refunded_at")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [orderItemId])
+  order           Order     @relation(fields: [orderId], references: [orderId])
+  unit            Unit?     @relation(fields: [unitId], references: [unitId])
+  builder         Builder   @relation(fields: [builderId], references: [builderId])
+  product         Product   @relation(fields: [productId], references: [productId])
+  requestedByUser User      @relation(fields: [requestedByUserId], references: [userId])
+
+  @@index([builderId])
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([aiFlaggedPattern])
+  @@map("returns")
+}
+
+model SupportTicket {
+  ticketId            String         @id @default(uuid()) @map("ticket_id") @db.Uuid
+  ticketNumber        String         @unique @map("ticket_number")
+  userId              String         @map("user_id") @db.Uuid
+  orderId             String?        @map("order_id") @db.Uuid
+  productId           String?        @map("product_id") @db.Uuid
+  subject             String
+  channel             TicketChannel  @default(web_widget)
+  status              TicketStatus   @default(open)
+  aiConfidence        Decimal?       @map("ai_confidence") @db.Decimal(4, 3)
+  aiEscalatedReason   String?        @map("ai_escalated_reason")
+  assignedStaffId     String?        @map("assigned_staff_id") @db.Uuid
+  telegramChatId      String?        @map("telegram_chat_id")
+  sentimentScore      Decimal?       @map("sentiment_score") @db.Decimal(4, 3)
+  resolvedAt          DateTime?      @map("resolved_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+
+  user          User              @relation("TicketUser", fields: [userId], references: [userId])
+  order         Order?            @relation(fields: [orderId], references: [orderId])
+  product       Product?          @relation(fields: [productId], references: [productId])
+  assignedStaff User?             @relation("TicketAssignedStaff", fields: [assignedStaffId], references: [userId])
+  messages      SupportMessage[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([assignedStaffId])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  messageId     String   @id @default(uuid()) @map("message_id") @db.Uuid
+  ticketId      String   @map("ticket_id") @db.Uuid
+  senderType    String   @map("sender_type")
+  senderUserId  String?  @map("sender_user_id") @db.Uuid
+  body          String
+  tokensIn      Int?     @map("tokens_in")
+  tokensOut     Int?     @map("tokens_out")
+  modelId       String?  @map("model_id")
+  attachments   Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  ticket     SupportTicket @relation(fields: [ticketId], references: [ticketId], onDelete: Cascade)
+  senderUser User?         @relation(fields: [senderUserId], references: [userId])
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+model BuilderPerformanceSnapshot {
+  snapshotId        String   @id @default(uuid()) @map("snapshot_id") @db.Uuid
+  builderId         String   @map("builder_id") @db.Uuid
+  period            String
+  periodStart       DateTime @map("period_start")
+  periodEnd         DateTime @map("period_end")
+  unitsBuilt        Int      @default(0) @map("units_built")
+  unitsSold         Int      @default(0) @map("units_sold")
+  revenueGbp        Decimal  @default(0) @map("revenue_gbp") @db.Decimal(14, 2)
+  costGbp           Decimal  @default(0) @map("cost_gbp") @db.Decimal(14, 2)
+  marginGbp         Decimal  @default(0) @map("margin_gbp") @db.Decimal(14, 2)
+  roiPct            Decimal  @default(0) @map("roi_pct") @db.Decimal(6, 2)
+  rmaCount          Int      @default(0) @map("rma_count")
+  rmaRate           Decimal  @default(0) @map("rma_rate") @db.Decimal(6, 4)
+  avgBuildMinutes   Int      @default(0) @map("avg_build_minutes")
+  avgQcPassRate     Decimal  @default(0) @map("avg_qc_pass_rate") @db.Decimal(5, 4)
+  qualityScore      Decimal  @default(0) @map("quality_score") @db.Decimal(4, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  builder Builder @relation(fields: [builderId], references: [builderId])
+
+  @@unique([builderId, period, periodStart])
+  @@index([builderId])
+  @@index([period])
+  @@map("builder_performance_snapshots")
+}
+
+model Review {
+  reviewId          String   @id @default(uuid()) @map("review_id") @db.Uuid
+  productId         String   @map("product_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  orderItemId       String?  @map("order_item_id") @db.Uuid
+  rating            Int
+  title             String?
+  body              String
+  verifiedPurchase  Boolean  @default(false) @map("verified_purchase")
+  helpfulCount      Int      @default(0) @map("helpful_count")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [productId])
+  user    User    @relation(fields: [userId], references: [userId])
+
+  @@index([productId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model CartSession {
+  cartId       String    @id @default(uuid()) @map("cart_id") @db.Uuid
+  userId       String?   @map("user_id") @db.Uuid
+  sessionToken String    @unique @map("session_token")
+  items        Json
+  subtotalGbp  Decimal   @default(0) @map("subtotal_gbp") @db.Decimal(12, 2)
+  expiresAt    DateTime  @map("expires_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [userId])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("cart_sessions")
+}
+
+model DiscountCode {
+  codeId     String    @id @default(uuid()) @map("code_id") @db.Uuid
+  code       String    @unique
+  type       String
+  value      Decimal   @db.Decimal(10, 2)
+  minSpend   Decimal?  @map("min_spend") @db.Decimal(10, 2)
+  maxUses    Int?      @map("max_uses")
+  usesCount  Int       @default(0) @map("uses_count")
+  startsAt   DateTime? @map("starts_at")
+  endsAt     DateTime? @map("ends_at")
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("discount_codes")
+}
+
+model AuditLog {
+  auditId      BigInt   @id @default(autoincrement()) @map("audit_id")
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  actorType    String   @map("actor_type")
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  payload      Json?
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  actorUser User? @relation(fields: [actorUserId], references: [userId])
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_log")
+}
+
+model BuilderQualityFlagAck {
+  ackId         String   @id @default(uuid()) @map("ack_id") @db.Uuid
+  flagMongoId   String   @map("flag_mongo_id")
+  acknowledgedBy String  @map("acknowledged_by") @db.Uuid
+  acknowledgedAt DateTime @default(now()) @map("acknowledged_at")
+  resolvedAt    DateTime? @map("resolved_at")
+  notes         String?
+
+  user User @relation(fields: [acknowledgedBy], references: [userId])
+
+  @@unique([flagMongoId, acknowledgedBy])
+  @@map("builder_quality_flag_acks")
+}
