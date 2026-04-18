@@ -54,77 +54,91 @@ export async function POST(request: Request) {
 
     let reply = '';
     let escalated = false;
+    let modelId = 'rule-based';
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      try {
-        const turn = await runSupportTurn({
-          ticketId: ticket.ticketId,
-          userId,
-          history: history.map((m) => ({
-            role: m.senderType === 'user' ? 'user' : m.senderType === 'ai' ? 'assistant' : 'system',
-            content: m.body,
-          })),
-          toolHandlers: {
-            escalate_to_human: async ({ reason, severity }) => {
-              await prisma.supportTicket.update({
-                where: { ticketId: ticket!.ticketId },
-                data: { status: 'escalated_human', aiEscalatedReason: reason },
-              });
-              await publishEvent('bav.support.escalated', {
-                ticketNumber: ticket!.ticketNumber,
-                reason,
-                severity,
-              });
-              return { ok: true };
-            },
-          },
-        });
-        reply = turn.reply;
-        escalated = turn.escalated;
-
-        await prisma.supportMessage.create({
-          data: {
-            ticketId: ticket.ticketId,
-            senderType: 'ai',
-            body: turn.reply,
-            tokensIn: turn.tokensIn,
-            tokensOut: turn.tokensOut,
-            modelId: turn.model,
-          },
-        });
-      } catch (err) {
-        console.error('[support] AI turn failed', err);
-        reply = 'Sorry — I could not reach the assistant. A human will follow up shortly.';
-        escalated = true;
-        await prisma.supportTicket.update({
-          where: { ticketId: ticket.ticketId },
-          data: { status: 'escalated_human', aiEscalatedReason: 'AI backend error' },
-        });
-        await publishEvent('bav.support.escalated', { ticketNumber: ticket.ticketNumber, reason: 'AI backend error' });
-      }
-    } else {
-      reply = 'Support chat is not wired up yet. Set ANTHROPIC_API_KEY in .env.local to enable the AI assistant. Your message has been saved.';
-    }
-
-    // Persist to Mongo transcript
-    await connectMongo();
-    await ChatTranscript.findOneAndUpdate(
-      { postgresTicketId: ticket.ticketId },
-      {
-        $setOnInsert: { postgresTicketId: ticket.ticketId, postgresUserId: userId },
-        $push: {
-          messages: {
-            $each: [
-              { senderType: 'user', senderUserId: userId, body: body.body, sentAt: new Date() },
-              ...(reply ? [{ senderType: 'ai', body: reply, sentAt: new Date() }] : []),
-            ],
+    // runSupportTurn now has its own provider fallback chain (Claude → Gemini → rule-based)
+    // and never throws for missing keys. It always returns a usable reply.
+    try {
+      const turn = await runSupportTurn({
+        ticketId: ticket.ticketId,
+        userId,
+        history: history.map((m) => ({
+          role: m.senderType === 'user' ? 'user' : m.senderType === 'ai' ? 'assistant' : 'system',
+          content: m.body,
+        })),
+        toolHandlers: {
+          escalate_to_human: async ({ reason, severity }) => {
+            await prisma.supportTicket.update({
+              where: { ticketId: ticket!.ticketId },
+              data: { status: 'escalated_human', aiEscalatedReason: reason },
+            });
+            await publishEvent('bav.support.escalated', {
+              ticketNumber: ticket!.ticketNumber,
+              reason,
+              severity,
+            });
+            return { ok: true };
           },
         },
-      },
-      { upsert: true, new: true },
-    );
+      });
+      reply = turn.reply;
+      escalated = turn.escalated;
+      modelId = turn.model;
 
-    return ok({ ticketId: ticket.ticketId, ticketNumber: ticket.ticketNumber, reply, escalated });
+      await prisma.supportMessage.create({
+        data: {
+          ticketId: ticket.ticketId,
+          senderType: 'ai',
+          body: turn.reply,
+          tokensIn: turn.tokensIn,
+          tokensOut: turn.tokensOut,
+          modelId: turn.model,
+        },
+      });
+    } catch (err) {
+      console.error('[support] AI turn failed', err);
+      reply = 'Thanks — a human will follow up shortly.';
+      escalated = true;
+      await prisma.supportTicket.update({
+        where: { ticketId: ticket.ticketId },
+        data: { status: 'escalated_human', aiEscalatedReason: 'AI backend error' },
+      });
+      await publishEvent('bav.support.escalated', { ticketNumber: ticket.ticketNumber, reason: 'AI backend error' });
+    }
+
+    // Persist to Mongo transcript (optional — gracefully skip if MONGO_URL is absent)
+    if (process.env.MONGO_URL) {
+      try {
+        const conn = await connectMongo();
+        if (conn) {
+          await ChatTranscript.findOneAndUpdate(
+            { postgresTicketId: ticket.ticketId },
+            {
+              $setOnInsert: { postgresTicketId: ticket.ticketId, postgresUserId: userId },
+              $push: {
+                messages: {
+                  $each: [
+                    { senderType: 'user', senderUserId: userId, body: body.body, sentAt: new Date() },
+                    ...(reply ? [{ senderType: 'ai', body: reply, sentAt: new Date() }] : []),
+                  ],
+                },
+              },
+            },
+            { upsert: true, new: true },
+          );
+        }
+      } catch (err) {
+        console.warn('[support] mongo transcript write skipped:', (err as Error).message);
+      }
+    }
+
+    return ok({
+      ticketId: ticket.ticketId,
+      ticketNumber: ticket.ticketNumber,
+      reply,
+      escalated,
+      model: modelId,
+    });
   } catch (err) {
     return handleError(err);
   }
