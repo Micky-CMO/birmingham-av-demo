@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 
 export type FilterAggregates = {
   categories: Array<{ slug: string; name: string }>;
+  conditions: string[];
   cpuFamilies: string[];
   gpuFamilies: string[];
   ramSizes: number[];
@@ -17,7 +18,7 @@ export type FilterAggregates = {
 export async function getFilterAggregates(categorySlug?: string): Promise<FilterAggregates> {
   const where = { isActive: true, ...(categorySlug ? { category: { slug: categorySlug } } : {}) };
 
-  const [categories, products, builders, priceMax] = await Promise.all([
+  const [categories, products, builders, priceMax, conditionGroups] = await Promise.all([
     prisma.productCategory.findMany({ orderBy: { sortOrder: 'asc' } }),
     prisma.product.findMany({ where, select: { title: true }, take: 5000 }),
     prisma.builder.findMany({
@@ -26,6 +27,7 @@ export async function getFilterAggregates(categorySlug?: string): Promise<Filter
       select: { builderCode: true, displayName: true },
     }),
     prisma.product.aggregate({ where, _max: { priceGbp: true } }),
+    prisma.product.groupBy({ by: ['conditionGrade'], where, _count: { conditionGrade: true } }),
   ]);
 
   const cpuSet = new Set<string>();
@@ -45,6 +47,10 @@ export async function getFilterAggregates(categorySlug?: string): Promise<Filter
 
   return {
     categories: categories.map((c) => ({ slug: c.slug, name: c.name })),
+    conditions: conditionGroups
+      .filter((g) => (g._count.conditionGrade ?? 0) > 0)
+      .sort((a, b) => (b._count.conditionGrade ?? 0) - (a._count.conditionGrade ?? 0))
+      .map((g) => g.conditionGrade),
     cpuFamilies: [...cpuSet].sort(),
     gpuFamilies: [...gpuSet].sort(),
     ramSizes: [...ramSet].sort((a, b) => a - b),

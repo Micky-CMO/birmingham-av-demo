@@ -1,0 +1,1 @@
+{"ticketId":"fcabf7c7-9478-4b6f-96f2-01ff71cefda1","ticketNumber":"TKT-2604-57732","reply":"Hi there. I can help with orders, specs, returns, warranty, delivery, or picking the right PC. What do you need?","escalated":false,"model":"rule-based"}

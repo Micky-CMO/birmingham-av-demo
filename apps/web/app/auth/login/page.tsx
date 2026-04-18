@@ -37,11 +37,13 @@ export default function LoginPage({ searchParams }: { searchParams: { next?: str
             <LoginForm next={searchParams.next ?? '/admin/dashboard'} />
           </div>
 
-          <p className="mt-6 text-center text-caption text-ink-500">
-            Demo credentials:{' '}
-            <code className="rounded-sm bg-ink-100 px-1 py-0.5 font-mono dark:bg-obsidian-800">Hamza2026</code> /{' '}
-            <code className="rounded-sm bg-ink-100 px-1 py-0.5 font-mono dark:bg-obsidian-800">Micky2026!</code>
-          </p>
+          {process.env.BAV_DEMO_MODE === 'true' && (
+            <p className="mt-6 text-center text-caption text-ink-500">
+              Demo credentials:{' '}
+              <code className="rounded-sm bg-ink-100 px-1 py-0.5 font-mono dark:bg-obsidian-800">Hamza2026</code> /{' '}
+              <code className="rounded-sm bg-ink-100 px-1 py-0.5 font-mono dark:bg-obsidian-800">Micky2026!</code>
+            </p>
+          )}
         </div>
       </main>
     </div>

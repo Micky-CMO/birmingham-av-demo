@@ -77,7 +77,7 @@ export function SupportWidget() {
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
             className="fixed bottom-24 right-5 z-40 w-[360px] max-w-[calc(100vw-2.5rem)]"
           >
-            <GlassCard className="flex h-[520px] flex-col overflow-hidden">
+            <GlassCard className="flex h-[520px] flex-col overflow-hidden bg-white/95 dark:bg-obsidian-900/95">
               <header className="flex items-center justify-between border-b border-ink-300/60 px-4 py-3 dark:border-obsidian-500/60">
                 <div>
                   <div className="text-small font-medium">Birmingham AV support</div>

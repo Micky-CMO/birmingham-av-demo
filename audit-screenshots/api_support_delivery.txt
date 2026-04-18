@@ -1,0 +1,1 @@
+{"ticketId":"50eef0f7-5c03-4b06-be1e-75d168e07830","ticketNumber":"TKT-2604-16207","reply":"UK mainland orders placed before 3pm ship same day for next-working-day delivery. Highlands and Islands typically 2 working days. Tracking arrives by email and SMS as soon as your parcel leaves the hub.","escalated":false,"model":"rule-based"}

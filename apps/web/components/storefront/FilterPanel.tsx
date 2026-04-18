@@ -7,14 +7,6 @@ import { cn } from '@/lib/cn';
 
 type Option = { value: string; label: string };
 
-const CONDITIONS: Option[] = [
-  { value: 'Like New', label: 'Like New' },
-  { value: 'Excellent', label: 'Excellent' },
-  { value: 'Very Good', label: 'Very Good' },
-  { value: 'Good', label: 'Good' },
-  { value: 'Refurbished', label: 'Refurbished' },
-];
-
 const SORTS: Option[] = [
   { value: 'relevance', label: 'Relevance' },
   { value: 'newest', label: 'Newest' },
@@ -25,6 +17,7 @@ const SORTS: Option[] = [
 
 export type FilterPanelProps = {
   categories: Array<{ slug: string; name: string }>;
+  conditions?: string[];
   showCategoryFilter?: boolean;
   cpuFamilies?: string[];
   gpuFamilies?: string[];
@@ -35,6 +28,7 @@ export type FilterPanelProps = {
 
 export function FilterPanel({
   categories,
+  conditions = [],
   showCategoryFilter = true,
   cpuFamilies = [],
   gpuFamilies = [],
@@ -210,20 +204,22 @@ export function FilterPanel({
         </GlassCard>
       )}
 
-      <GlassCard className="p-5">
-        <FieldLabel>Condition</FieldLabel>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {CONDITIONS.map((c) => (
-            <Chip
-              key={c.value}
-              active={current.condition === c.value}
-              onClick={() => setParam({ condition: current.condition === c.value ? null : c.value })}
-            >
-              {c.label}
-            </Chip>
-          ))}
-        </div>
-      </GlassCard>
+      {conditions.length > 0 && (
+        <GlassCard className="p-5">
+          <FieldLabel>Condition</FieldLabel>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {conditions.map((c) => (
+              <Chip
+                key={c}
+                active={current.condition === c}
+                onClick={() => setParam({ condition: current.condition === c ? null : c })}
+              >
+                {c}
+              </Chip>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       {cpuFamilies.length > 0 && (
         <GlassCard className="p-5">

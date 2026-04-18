@@ -49,12 +49,19 @@ export default async function BuilderProfile({ params }: { params: { code: strin
     include: { product: { include: { inventory: true } } },
   });
 
+  // The signature block shows b.bio as a pull quote. If we also pass bio into
+  // the hero lead we get an awkward duplicate. Put a generic lead in the hero
+  // and let the signature section carry the personal bio text.
+  const heroLead = b.bio
+    ? `Tier ${b.tier}. Based at ${b.warehouseNode.nodeCode}. ${b.totalUnitsBuilt.toLocaleString('en-GB')} units built to date with a ${Number(b.qualityScore).toFixed(2)}/5 quality score.`
+    : undefined;
+
   return (
     <>
       <PageHero
         eyebrow={`Builder · ${b.builderCode}`}
         title={b.displayName}
-        lead={b.bio ?? undefined}
+        lead={heroLead}
         right={
           <GlassCard className="p-6">
             <div className="relative mx-auto h-28 w-28 overflow-hidden rounded-full bg-ink-100 dark:bg-obsidian-800">

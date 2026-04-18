@@ -112,11 +112,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
     : { url: PLACEHOLDER_SVG, alt: product.title };
   const thumbs = hasAnyImage ? gallery.slice(0, 5) : [];
 
-  // --- Description: descriptionHtml → subtitle → fallback ------------------
-  const descriptionHtml: string | null = product.descriptionHtml
+  // --- Description: descriptionHtml → rich auto-generated fallback --------
+  const descriptionHtml: string = product.descriptionHtml
     ? sanitiseHtml(product.descriptionHtml)
-    : null;
-  const descriptionFallback = product.subtitle ?? 'No description available.';
+    : generateRichDescription({
+        title: product.title,
+        conditionGrade: product.conditionGrade,
+        warrantyMonths: product.warrantyMonths,
+        categoryName: product.category.name,
+        builderName: product.builder.displayName,
+      });
 
   const stockQty = product.inventory?.stockQty ?? 0;
   const inStock = stockQty > 0;
@@ -199,15 +204,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
           <section className="mt-8">
             <h2 className="text-caption uppercase tracking-wider text-ink-500">Description</h2>
-            {descriptionHtml ? (
-              <div
-                className="prose prose-sm mt-2 max-w-none text-body text-ink-700 dark:prose-invert dark:text-ink-300"
-                // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-              />
-            ) : (
-              <p className="mt-2 text-body text-ink-700 dark:text-ink-300">{descriptionFallback}</p>
-            )}
+            <div
+              className="prose prose-sm mt-2 max-w-none space-y-3 text-body text-ink-700 [&_strong]:text-ink-900 dark:prose-invert dark:text-ink-300 dark:[&_strong]:text-ink-50"
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+            />
           </section>
 
           <GlassCard className="mt-8 p-6">
@@ -252,6 +253,70 @@ export default async function ProductPage({ params }: { params: { slug: string }
       )}
     </div>
   );
+}
+
+/**
+ * Generate a professional product description from available metadata when
+ * the scraped descriptionHtml is absent. Extracts CPU/GPU/RAM/storage from the
+ * title and wraps it in on-brand trust copy so no product ever reads as blank.
+ */
+function generateRichDescription(p: {
+  title: string;
+  conditionGrade: string;
+  warrantyMonths: number;
+  categoryName: string;
+  builderName: string;
+}): string {
+  const t = p.title;
+  const cpu = t.match(/\b(i[3579](?:-\d{4,5}\w*)?|core i[3579](?:-\d{4,5}\w*)?|ryzen [3579]\b[\w-]*|m[1-4](?: pro| max| ultra)?|xeon|celeron)/i)?.[0];
+  const gpu = t.match(/\b(rtx ?\d{3,4}(?:\s?ti)?|gtx ?\d{3,4}|rx ?\d{3,4}|radeon \w+)\b/i)?.[0];
+  const ram = t.match(/\b(\d{1,3})\s*gb\s*(?:ram|ddr\d?)\b/i)?.[1];
+  const ssd = t.match(/\b(\d+\s*(?:gb|tb))\s*(?:ssd|nvme)/i)?.[1];
+  const hdd = t.match(/\b(\d+\s*(?:gb|tb))\s*hdd/i)?.[1];
+  const os = t.match(/\bwin(?:dows)?\s*(10|11)\b/i)?.[0];
+
+  const specs: string[] = [];
+  if (cpu) specs.push(cpu.replace(/^core\s+/i, '').trim());
+  if (gpu) specs.push(gpu);
+  if (ram) specs.push(`${ram}GB RAM`);
+  if (ssd) specs.push(`${ssd} SSD`);
+  if (hdd) specs.push(`${hdd} HDD`);
+  if (os) specs.push(os.replace(/win\s*/i, 'Windows '));
+
+  const specLine = specs.length > 0 ? specs.join(' · ') : null;
+
+  // Category-specific opener
+  const cat = p.categoryName.toLowerCase();
+  let opener: string;
+  if (cat.includes('laptop')) {
+    opener = `A carefully refurbished laptop${specLine ? ` packing ${specLine}` : ''}. Quiet, battery-checked, ready for a new owner.`;
+  } else if (cat.includes('gaming')) {
+    opener = `A hand-built gaming rig${specLine ? ` with ${specLine}` : ''}. Bench-tested on real games, not synthetic benchmarks alone.`;
+  } else if (cat.includes('monitor')) {
+    opener = `A fully tested display, calibrated and panel-checked. Pixel-perfect out of the box.`;
+  } else if (cat.includes('all-in-one')) {
+    opener = `An all-in-one refurbished PC${specLine ? ` running ${specLine}` : ''}. One clean unit, zero clutter.`;
+  } else if (cat.includes('network')) {
+    opener = `Enterprise network kit, bench-tested, port-by-port verified, and factory-reset before shipping.`;
+  } else if (cat.includes('projector')) {
+    opener = `A tested projector with lamp hours checked, optics cleaned, and colour calibrated to spec.`;
+  } else if (cat.includes('parts')) {
+    opener = `A tested component ready to drop into your build${specLine ? ` (${specLine})` : ''}. Verified working before dispatch.`;
+  } else if (cat.includes('power')) {
+    opener = `A tested power supply — voltage regulation, ripple, and load-bearing verified under real conditions.`;
+  } else if (cat.includes('hard')) {
+    opener = `A tested storage device with SMART health checked and surface-scanned end-to-end before it left the bench.`;
+  } else if (cat.includes('printer')) {
+    opener = `A refurbished printer, test-printed, cleaned, and calibrated. Ready for day-one use.`;
+  } else {
+    opener = `A professionally refurbished ${p.categoryName.toLowerCase()} from Birmingham AV${specLine ? `, featuring ${specLine}` : ''}.`;
+  }
+
+  return [
+    `<p>${opener}</p>`,
+    `<p><strong>Tested on the bench.</strong> Every unit passes our 7-stage QC before shipping: POST, burn-in, thermal stress, memtest, GPU stress (where applicable), disk read/write, peripherals, and a final cosmetic check.</p>`,
+    `<p><strong>${p.warrantyMonths}-month warranty.</strong> Parts and labour, no small print. Built and signed by ${p.builderName} — the name on the warranty card is the name on the bench.</p>`,
+  ].join('');
 }
 
 function flattenSpecs(

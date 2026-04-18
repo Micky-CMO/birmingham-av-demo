@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { Button, GlassCard } from '@/components/ui';
 
 export const metadata: Metadata = {
@@ -7,8 +9,13 @@ export const metadata: Metadata = {
   description:
     'Sign in to your Birmingham AV account to track orders, manage returns, update addresses, and set notification preferences.',
 };
+export const dynamic = 'force-dynamic';
 
 export default function AccountPage() {
+  // If a staff member is signed in, route them to the admin console instead.
+  const isStaff = cookies().get('bav_staff')?.value === '1';
+  if (isStaff) redirect('/admin/dashboard');
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="text-h1 font-display">Your account</h1>

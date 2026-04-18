@@ -6,6 +6,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { Badge, Button, GlassCard } from '@/components/ui';
 import { useCartStore } from '@/stores/cart';
+import { useUiStore } from '@/stores/ui';
 import { formatGbp, truncate } from '@bav/lib';
 
 export type ProductCardModel = {
@@ -95,6 +96,8 @@ function ImagePlaceholder({ title }: { title: string }) {
 
 export function ProductCard({ product }: { product: ProductCardModel }) {
   const add = useCartStore((s) => s.add);
+  const setCartOpen = useUiStore((s) => s.setCartOpen);
+  const [justAdded, setJustAdded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -177,7 +180,9 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
             </div>
             <Button
               size="sm"
-              onClick={() =>
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 add({
                   productId: product.productId,
                   title: product.title,
@@ -185,10 +190,14 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
                   pricePerUnitGbp: product.priceGbp,
                   qty: 1,
                   imageUrl: product.imageUrl,
-                })
-              }
+                });
+                setCartOpen(true);
+                setJustAdded(true);
+                window.setTimeout(() => setJustAdded(false), 1800);
+              }}
+              className={justAdded ? 'bg-brand-green-600' : ''}
             >
-              Add to cart
+              {justAdded ? '✓ Added' : 'Add to cart'}
             </Button>
           </div>
         </div>

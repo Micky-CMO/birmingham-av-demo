@@ -1,0 +1,1 @@
+{"overall":"degraded","checks":{"postgres":"ok","mongo":"ok","anthropic":"fail","stripe":"fail"}}

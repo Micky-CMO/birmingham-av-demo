@@ -1,0 +1,16 @@
+HTTP/1.1 200 OK
+Cache-Control: public, max-age=0, must-revalidate
+Content-Type: application/json
+Date: Sat, 18 Apr 2026 01:58:05 GMT
+Server: Vercel
+Set-Cookie: bav_session=user%3Ac9c3cb2c-68b3-44e9-9f59-cd540cb4397c; Path=/; Expires=Sat, 02 May 2026 01:58:05 GMT; Max-Age=1209600; Secure; HttpOnly; SameSite=lax
+Set-Cookie: bav_staff=1; Path=/; Expires=Sat, 02 May 2026 01:58:05 GMT; Max-Age=1209600; Secure; HttpOnly; SameSite=lax
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+Vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch
+X-Matched-Path: /api/auth/signin
+X-Vercel-Cache: MISS
+X-Vercel-Enable-Rewrite-Caching: 1
+X-Vercel-Id: lhr1::iad1::qpbcr-1776477484571-65d8cf4a766b
+Transfer-Encoding: chunked
+
+{"ok":true,"role":"super_admin","email":"hamza2026@birmingham-av.com"}
