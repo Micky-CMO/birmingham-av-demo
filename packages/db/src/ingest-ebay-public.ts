@@ -177,11 +177,15 @@ function inferCategorySlug(title: string): string {
 
 function inferCondition(title: string): string {
   const t = title.toLowerCase();
-  if (/brand new|sealed/.test(t)) return 'New';
-  if (/like new|grade a/.test(t)) return 'Like New';
-  if (/excellent|grade b/.test(t)) return 'Excellent';
-  if (/refurb/.test(t)) return 'Refurbished';
-  return 'Refurbished';
+  if (/brand new|sealed|new in box|\bnib\b|factory sealed/.test(t)) return 'New';
+  if (/like new|grade a\b/.test(t)) return 'Like New';
+  if (/excellent|grade b\b/.test(t)) return 'Excellent';
+  if (/very good|grade c\b/.test(t)) return 'Very Good';
+  if (/refurbished|refurb/.test(t)) return 'Refurbished';
+  if (/open box|damaged box/.test(t)) return 'Open Box';
+  if (/for parts|not working|spare|repair/.test(t)) return 'For Parts';
+  // Default to Used — honest fallback rather than everything being "Refurbished"
+  return 'Used';
 }
 
 // --- Listing page (cards) parser ---
@@ -241,20 +245,41 @@ function parseStorePage(html: string): Card[] {
 function parseItemPage(html: string): Pick<Card, 'description' | 'condition' | 'itemSpecifics' | 'extraImages'> {
   const $ = cheerio.load(html);
 
-  // Description: eBay loads via iframe. Try inline first, then meta description.
-  const inline = $('#desc_div, [data-testid="x-item-description-child"]').text().trim();
+  // Description: try several selectors, then fall back to meta description.
+  const inline = $('#desc_div, [data-testid="x-item-description-child"], .item-description, #viTabs_0_is').text().trim();
   const meta = $('meta[name="description"]').attr('content') ?? '';
-  const description = inline.length > 60 ? inline : meta;
+  const description = inline.length > 80 ? inline : meta;
 
-  // Item specifics: <dl>/<dt>/<dd> grid on the listing
+  // Item specifics: <dl>/<dt>/<dd> grid on the listing (new + legacy markup)
   const itemSpecifics: Record<string, string> = {};
   $('div.ux-layout-section-evo__item .ux-labels-values').each((_, el) => {
     const k = $(el).find('.ux-labels-values__labels').text().trim().replace(/:$/, '');
     const v = $(el).find('.ux-labels-values__values').text().trim();
     if (k && v && k.length < 60 && v.length < 200) itemSpecifics[k] = v;
   });
+  $('div.ux-labels-values__component .ux-labels-values__labels-content, dl.item-specifics dt').each((_, el) => {
+    const label = $(el).text().trim().replace(/:$/, '');
+    const val = $(el).next().text().trim();
+    if (label && val && !itemSpecifics[label] && label.length < 60 && val.length < 200) {
+      itemSpecifics[label] = val;
+    }
+  });
 
-  const condition = itemSpecifics.Condition ?? itemSpecifics['Condition Description'] ?? undefined;
+  // Condition: try multiple selectors eBay uses across their iterations
+  const rawCondition =
+    $('[data-testid="x-item-condition"] .ux-textspans, [data-testid="x-item-condition"] .ux-icon-text__text')
+      .first()
+      .text()
+      .trim() ||
+    $('.x-item-condition-max-view .ux-textspans--BOLD, .x-item-condition-text').first().text().trim() ||
+    $('[itemprop="itemCondition"]').attr('content') ||
+    itemSpecifics.Condition ||
+    itemSpecifics['Condition Description'] ||
+    '';
+
+  // Normalise — strip the "See seller's listing..." cruft eBay appends.
+  const cleaned = rawCondition.replace(/See (?:the )?seller.?s? listing.*$/i, '').replace(/\s+opens in a new.*$/i, '').trim();
+  const condition = mapEbayCondition(cleaned);
 
   // Extra images: thumb-strip carousel
   const extraImages: string[] = [];
@@ -266,6 +291,29 @@ function parseItemPage(html: string): Pick<Card, 'description' | 'condition' | '
   });
 
   return { description, condition, itemSpecifics, extraImages };
+}
+
+/**
+ * Map eBay's condition strings to our catalog grades.
+ * eBay uses: "New", "Open box", "Certified Refurbished", "Seller refurbished",
+ *   "Manufacturer refurbished", "Used", "For parts or not working".
+ * We map to: New / Open Box / Refurbished / Used / Like New / Excellent / Very Good / Good / For Parts
+ */
+function mapEbayCondition(s: string | null | undefined): string | undefined {
+  if (!s) return undefined;
+  const t = s.toLowerCase();
+  if (/for parts|not working/.test(t)) return 'For Parts';
+  if (/brand new|sealed|factory new/.test(t)) return 'New';
+  if (/\bnew\b(?!.*refurb)/.test(t)) return 'New';
+  if (/open box/.test(t)) return 'Open Box';
+  if (/certified refurb|manufacturer refurb/.test(t)) return 'Refurbished';
+  if (/seller refurb|refurb/.test(t)) return 'Refurbished';
+  if (/like new|grade a\b/.test(t)) return 'Like New';
+  if (/excellent|grade b\b/.test(t)) return 'Excellent';
+  if (/very good|grade c\b/.test(t)) return 'Very Good';
+  if (/\bgood\b|grade d\b/.test(t)) return 'Good';
+  if (/pre.?owned|pre.?loved|used/.test(t)) return 'Used';
+  return undefined; // let inferCondition handle
 }
 
 // --- Main ---

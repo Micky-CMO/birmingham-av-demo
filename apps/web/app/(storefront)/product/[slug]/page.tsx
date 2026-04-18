@@ -6,6 +6,10 @@ import { Badge, GlassCard } from '@/components/ui';
 import { getProductBySlug } from '@/lib/services/products';
 import { formatGbp } from '@bav/lib';
 import { AddToCartButton } from './AddToCartButton';
+import { StockUrgency, SavingsBadge } from '@/components/storefront/StockUrgency';
+import { RecordViewEffect } from '@/components/storefront/RecordViewEffect';
+import { RelatedProducts } from '@/components/storefront/RelatedProducts';
+import { RecentlyViewed } from '@/components/storefront/RecentlyViewed';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,12 +175,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
         </div>
 
         <div className="md:col-span-5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">{product.conditionGrade}</Badge>
-            {inStock ? (
-              <Badge tone="positive">In stock</Badge>
-            ) : (
-              <Badge tone="warning">Awaiting build</Badge>
+            {product.compareAtGbp && Number(product.compareAtGbp) > Number(product.priceGbp) && (
+              <SavingsBadge
+                priceGbp={Number(product.priceGbp)}
+                compareAtGbp={Number(product.compareAtGbp)}
+              />
             )}
           </div>
           <h1 className="mt-3 text-h1 font-display">{product.title}</h1>
@@ -189,6 +194,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 {formatGbp(Number(product.compareAtGbp))}
               </span>
             )}
+          </div>
+
+          <div className="mt-4">
+            <StockUrgency stockQty={stockQty} />
           </div>
 
           <div className="mt-8">
@@ -228,6 +237,22 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </GlassCard>
         </div>
       </div>
+
+      <RecordViewEffect
+        productId={product.productId}
+        slug={product.slug}
+        title={product.title}
+        priceGbp={Number(product.priceGbp)}
+        imageUrl={primaryImageUrl}
+      />
+
+      <RelatedProducts
+        categorySlug={product.category.slug}
+        excludeId={product.productId}
+        builderCode={product.builder.builderCode}
+      />
+
+      <RecentlyViewed excludeId={product.productId} />
 
       {catalog?.specs && Object.keys(catalog.specs).length > 0 && (
         <section className="mt-16">
