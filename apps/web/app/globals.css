@@ -34,18 +34,21 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom cursor visibility: hide native cursor only on pointer devices */
-@media (hover: hover) {
-  html,
-  body,
-  button,
-  a,
-  [role='button'],
-  input,
-  textarea,
-  select {
-    cursor: none;
-  }
+/* Keep the native OS cursor visible everywhere. The custom CursorFollower is a
+   decorative spotlight, not a replacement — so the user can always see where
+   they are about to click. */
+html,
+body {
+  cursor: auto;
+}
+a,
+button,
+[role='button'],
+input[type='submit'],
+input[type='button'],
+label[for],
+.cursor-pointer {
+  cursor: pointer;
 }
 
 * {

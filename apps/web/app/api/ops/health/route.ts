@@ -4,7 +4,7 @@ import { handleError, ok } from '@/lib/json';
 
 export async function GET() {
   try {
-    const checks: Record<string, 'ok' | 'fail'> = {};
+    const checks: Record<string, string> = {};
     try {
       await prisma.$queryRaw`SELECT 1`;
       checks.postgres = 'ok';
@@ -17,9 +17,10 @@ export async function GET() {
     } catch {
       checks.mongo = 'fail';
     }
-    checks.anthropic = process.env.ANTHROPIC_API_KEY ? 'ok' : 'fail';
+    checks.ai =
+      process.env.ANTHROPIC_API_KEY || process.env.GOOGLE_GENAI_API_KEY ? 'ok' : 'rule-based-fallback';
     checks.stripe = process.env.STRIPE_SECRET_KEY ? 'ok' : 'fail';
-    const overall = Object.values(checks).every((v) => v === 'ok') ? 'ok' : 'degraded';
+    const overall = Object.values(checks).every((v) => v === 'ok' || v === 'rule-based-fallback') ? 'ok' : 'degraded';
     return ok({ overall, checks });
   } catch (err) {
     return handleError(err);
