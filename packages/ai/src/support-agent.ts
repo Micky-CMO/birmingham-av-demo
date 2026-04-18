@@ -2,6 +2,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { anthropic, modelSupport } from './client';
 import { SUPPORT_SYSTEM_PROMPT } from './prompts';
+import { KB_RULES } from './knowledge-base';
 
 export const SupportTurnInputSchema = z.object({
   ticketId: z.string(),
@@ -167,16 +168,23 @@ async function runGemini(input: SupportTurnInput): Promise<SupportTurnOutput> {
 }
 
 // ------------ Rule-based responder (ALWAYS works, no API key) ------------
-// Matches on keyword patterns and returns on-brand support copy. Not AI,
-// but convincing enough for a demo and genuinely useful for common questions.
+// Matches on keyword patterns against the knowledge base in ./knowledge-base.ts.
+// Rules have an optional priority; higher wins. Covers hardware deep-dives
+// (GPU/CPU/RAM/storage/monitor/projector/networking/cooling/PSU), build
+// recommendations, delivery/returns/warranty/payment, condition grades,
+// builders, upgrades, discounts, and trade enquiries. Escalation is reserved
+// for genuine human-needed cases (legal, safety, complaints).
 
 type Rule = {
   match: RegExp;
   reply: string;
   escalate?: boolean;
+  priority?: number;
 };
 
-const RULES: Rule[] = [
+// Legacy short rules kept only as ultra-common-catch fallbacks below the
+// knowledge base. The real matcher iterates KB_RULES first (sorted by priority).
+const LEGACY_FALLBACK_RULES: Rule[] = [
   // Greetings
   {
     match: /^(hi|hello|hey|good (?:morning|afternoon|evening)|yo|hiya)\b/i,
@@ -272,28 +280,33 @@ function runRuleBased(input: SupportTurnInput): SupportTurnOutput {
   const lastUserMessage = [...input.history].reverse().find((m) => m.role === 'user')?.content ?? '';
   const normalized = lastUserMessage.trim();
 
-  // Very short greeting
   if (!normalized) {
     return {
-      reply: 'Hi. What can I help with today?',
+      reply: 'Hi. What can I help with — specs, a PC recommendation, an order, a return, or something else?',
       escalated: false,
       tokensIn: 0,
       tokensOut: 0,
-      model: 'rule-based',
+      model: 'mickai-v1',
     };
   }
 
-  for (const rule of RULES) {
+  // Priority-sorted: highest priority wins on ties. Rules without explicit
+  // priority default to 0 so specific hardware answers beat generic matches.
+  const ordered = [...KB_RULES, ...LEGACY_FALLBACK_RULES].sort(
+    (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
+  );
+
+  for (const rule of ordered) {
     if (rule.match.test(normalized)) {
       let escalated = false;
       if (rule.escalate && input.toolHandlers?.escalate_to_human) {
-        const severity: 'low' | 'medium' | 'high' | 'critical' = /angry|legal|lawyer|ombudsman|frustrated/i.test(
+        const severity: 'low' | 'medium' | 'high' | 'critical' = /smoke|burning|fire|sparks|legal|lawyer|ombudsman|trading standards|court/i.test(
           normalized,
         )
           ? 'high'
           : 'medium';
         void input.toolHandlers.escalate_to_human({
-          reason: `Matched rule "${rule.match.source.slice(0, 60)}"`,
+          reason: `Matched rule "${rule.match.source.slice(0, 80)}"`,
           severity,
         });
         escalated = true;
@@ -303,25 +316,39 @@ function runRuleBased(input: SupportTurnInput): SupportTurnOutput {
         escalated,
         tokensIn: Math.ceil(normalized.length / 4),
         tokensOut: Math.ceil(rule.reply.length / 4),
-        model: 'rule-based',
+        model: 'mickai-v1',
       };
     }
   }
 
-  // Unmatched — escalate politely and let staff pick up
-  const genericReply =
-    'Good question — I want to make sure you get the right answer, so I\'ll raise this with the team. They typically respond within two hours during UK working hours. Could you share a bit more detail so we can help faster?';
-  if (input.toolHandlers?.escalate_to_human) {
+  // Unmatched — give a GENUINELY helpful default rather than escalating.
+  // Only escalate if the message looks like a clear support issue.
+  const looksLikeSupport =
+    /\b(my order|not working|broken|refund|complaint|help me with)\b/i.test(normalized);
+
+  if (looksLikeSupport && input.toolHandlers?.escalate_to_human) {
     void input.toolHandlers.escalate_to_human({
-      reason: 'Rule-based responder had no confident match — human pick-up requested.',
+      reason: 'Unmatched support-flavoured query',
       severity: 'low',
     });
+    return {
+      reply:
+        'I don\'t have a clear answer for that one — I\'m raising it with the team. They typically reply inside two hours during UK working hours.',
+      escalated: true,
+      tokensIn: Math.ceil(normalized.length / 4),
+      tokensOut: 120,
+      model: 'mickai-v1',
+    };
   }
+
+  // Default: guide the user, don\'t escalate.
+  const guide =
+    'Happy to help — I can talk you through PC specs (CPU, GPU, RAM, storage), recommend a build for your budget, compare products, or cover orders, delivery, warranty, and returns. What are you looking for?';
   return {
-    reply: genericReply,
-    escalated: true,
+    reply: guide,
+    escalated: false,
     tokensIn: Math.ceil(normalized.length / 4),
-    tokensOut: Math.ceil(genericReply.length / 4),
-    model: 'rule-based',
+    tokensOut: Math.ceil(guide.length / 4),
+    model: 'mickai-v1',
   };
 }

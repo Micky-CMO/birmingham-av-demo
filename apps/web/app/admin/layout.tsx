@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 
 const NAV = [
   { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/builder-portal', label: 'Builder portal' },
   { href: '/admin/builders', label: 'Builders' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/returns', label: 'Returns' },
