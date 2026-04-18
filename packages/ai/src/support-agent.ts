@@ -1,7 +1,7 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import { anthropic, modelSupport } from './client.js';
-import { SUPPORT_SYSTEM_PROMPT } from './prompts.js';
+import { anthropic, modelSupport } from './client';
+import { SUPPORT_SYSTEM_PROMPT } from './prompts';
 
 export const SupportTurnInputSchema = z.object({
   ticketId: z.string(),
