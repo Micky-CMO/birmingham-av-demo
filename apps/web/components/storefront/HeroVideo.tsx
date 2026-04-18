@@ -35,11 +35,11 @@ export function HeroVideo() {
   }, []);
 
   return (
-    <section ref={ref} className="relative w-full overflow-hidden bg-ink-50 dark:bg-obsidian-950">
+    <section ref={ref} className="relative w-full overflow-hidden">
       <AmbientBeams />
 
       {/* ============ VIDEO PLATE (sm+) ============ */}
-      <div className="relative hidden h-[78vh] min-h-[560px] w-full overflow-hidden sm:block md:h-[82vh]">
+      <div className="relative hidden h-[72vh] min-h-[560px] w-full overflow-hidden sm:block md:h-[78vh]">
         <motion.div style={{ y: videoY, scale: videoScale, opacity: videoOpacity }} className="absolute inset-0">
           <video
             autoPlay
@@ -48,7 +48,8 @@ export function HeroVideo() {
             playsInline
             preload="auto"
             poster="/brand/hero-poster.jpg"
-            className="h-full w-full object-cover object-center"
+            className="h-full w-full object-cover"
+            style={{ objectPosition: 'center 62%' }}
           >
             <source src="/brand/hero.mp4" type="video/mp4" />
           </video>
