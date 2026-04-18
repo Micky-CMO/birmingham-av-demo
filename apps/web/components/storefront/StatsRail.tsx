@@ -1,3 +1,5 @@
+'use client';
+
 import { AnimatedNumber } from '@/components/fx/AnimatedNumber';
 import { ScrollReveal } from '@/components/fx/ScrollReveal';
 
