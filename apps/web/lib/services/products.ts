@@ -109,12 +109,12 @@ export async function listProducts(query: ProductListQuery): Promise<{
   const items: ListedProduct[] = rows.map((p) => {
     const raw = catalogById.get(p.productId);
     const mongoImage = raw?.images?.find((i) => i.isPrimary)?.url ?? raw?.images?.[0]?.url ?? null;
-    // Priority: Postgres primaryImageUrl -> Postgres imageUrls[0] -> Mongo catalog -> category default stock photo
-    const imageUrl =
-      p.primaryImageUrl ??
-      p.imageUrls?.[0] ??
-      mongoImage ??
-      defaultImageFor(p.category?.slug);
+    // Priority: Postgres primaryImageUrl -> Postgres imageUrls[0] -> Mongo catalog -> null.
+    // No category default: a generic stock photo for every product in a category
+    // is misleading (all laptops would show the same MacBook shot). When there's
+    // no real image, ProductCard renders a product-specific placeholder inferred
+    // from the title (tower / laptop / GPU / storage etc).
+    const imageUrl = p.primaryImageUrl ?? p.imageUrls?.[0] ?? mongoImage ?? null;
     const cpu = raw?.specs?.cpu?.model ?? null;
     const gpu = raw?.specs?.gpu?.model ?? null;
     const ram = raw?.specs?.memory?.sizeGb ? `${raw.specs.memory.sizeGb}GB` : null;

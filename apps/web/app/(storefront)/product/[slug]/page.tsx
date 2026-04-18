@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge, GlassCard } from '@/components/ui';
-import { getProductBySlug, defaultImageFor } from '@/lib/services/products';
+import { getProductBySlug } from '@/lib/services/products';
 import { formatGbp } from '@bav/lib';
 import { AddToCartButton } from './AddToCartButton';
 import { StockUrgency, SavingsBadge } from '@/components/storefront/StockUrgency';
@@ -90,12 +90,16 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const { product } = data;
   const catalog = data.catalog as Catalog | null;
 
-  // --- Primary image: Postgres -> Mongo -> category default stock photo ----
-  const primaryImageUrl: string =
+  // --- Primary image: Postgres -> Mongo -> null. Fall through to the
+  // PLACEHOLDER_SVG below when no real product image is attached. Category
+  // default stock photos are deliberately NOT used here: they'd make every
+  // product in a category look identical, which is more misleading than a
+  // branded placeholder.
+  const primaryImageUrl: string | null =
     product.primaryImageUrl ??
     catalog?.images?.find((i) => i.isPrimary)?.url ??
     catalog?.images?.[0]?.url ??
-    defaultImageFor(product.category?.slug);
+    null;
 
   // --- Gallery: merge Postgres imageUrls with Mongo catalog.images, dedupe -
   type GalleryImage = { url: string; alt: string };

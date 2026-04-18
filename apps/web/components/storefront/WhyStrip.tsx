@@ -34,7 +34,7 @@ export function WhyStrip() {
             </h3>
             <p className="mt-2 text-small text-ink-500 dark:text-ink-300">{item.body}</p>
 
-            {item.kind === 'shipping' && <CourierRow />}
+            {item.kind === 'shipping' && <CourierNames />}
           </GlassCard>
         ))}
       </div>
@@ -42,76 +42,21 @@ export function WhyStrip() {
   );
 }
 
-function CourierRow() {
+/**
+ * Courier partners. Listed as clean wordmark text, NOT approximations of the
+ * actual brand marks. Drop-in real licensed logo assets when the client
+ * provides them.
+ */
+function CourierNames() {
   return (
-    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-ink-300/50 pt-4 dark:border-obsidian-500/40">
-      <RoyalMailLogo />
-      <DPDLogo />
-      <EvriLogo />
-      <ParcelforceLogo />
-    </div>
-  );
-}
-
-// ============================================================================
-// Courier marks. Redrawn as small inline SVGs in the brand voice so they read
-// on light and dark surfaces. Not the official trademarks, styled approximations.
-// ============================================================================
-
-function RoyalMailLogo() {
-  return (
-    <div className="flex h-6 items-center gap-1.5" title="Royal Mail">
-      <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.5" y="0.5" width="21" height="15" rx="2" fill="#EF2B2D" />
-        <path d="M4 5l4 3.5L12 5v6" stroke="#FFD700" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M14 5h5M14 8h5M14 11h5" stroke="#FFD700" strokeWidth="1" strokeLinecap="round" />
-      </svg>
-      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
-        Royal Mail
-      </span>
-    </div>
-  );
-}
-
-function DPDLogo() {
-  return (
-    <div className="flex h-6 items-center gap-1.5" title="DPD">
-      <svg width="26" height="16" viewBox="0 0 26 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.5" y="0.5" width="25" height="15" rx="2" fill="#DC0032" />
-        <text x="13" y="11.5" fontFamily="Inter, sans-serif" fontSize="8" fontWeight="900" fill="#FFFFFF" textAnchor="middle" letterSpacing="0.5">DPD</text>
-      </svg>
-      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
-        DPD
-      </span>
-    </div>
-  );
-}
-
-function EvriLogo() {
-  return (
-    <div className="flex h-6 items-center gap-1.5" title="Evri">
-      <svg width="26" height="16" viewBox="0 0 26 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.5" y="0.5" width="25" height="15" rx="8" fill="#56C4D6" />
-        <text x="13" y="11.5" fontFamily="Inter, sans-serif" fontSize="8" fontWeight="700" fill="#0A3346" textAnchor="middle" letterSpacing="0">evri</text>
-      </svg>
-      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
-        Evri
-      </span>
-    </div>
-  );
-}
-
-function ParcelforceLogo() {
-  return (
-    <div className="flex h-6 items-center gap-1.5" title="Parcelforce Worldwide">
-      <svg width="28" height="16" viewBox="0 0 28 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.5" y="0.5" width="27" height="15" rx="2" fill="#004990" />
-        <path d="M4 3l-2 3h2l-1.5 4h2l1-2h2l0.5 2h2L8 3z" fill="#FFD700" />
-        <text x="17" y="11.5" fontFamily="Inter, sans-serif" fontSize="7" fontWeight="700" fill="#FFFFFF" textAnchor="middle">PFORCE</text>
-      </svg>
-      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
-        Parcelforce
-      </span>
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-ink-300/50 pt-4 font-mono text-caption uppercase tracking-widest text-ink-500 dark:border-obsidian-500/40 dark:text-ink-300">
+      <span>Royal Mail</span>
+      <span aria-hidden>&middot;</span>
+      <span>DPD</span>
+      <span aria-hidden>&middot;</span>
+      <span>Evri</span>
+      <span aria-hidden>&middot;</span>
+      <span>Parcelforce</span>
     </div>
   );
 }
