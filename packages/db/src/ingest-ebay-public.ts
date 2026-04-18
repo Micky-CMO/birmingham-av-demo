@@ -269,12 +269,18 @@ async function main() {
       if (!categoryId) continue;
       const builder = builders[i % builders.length]!;
 
+      const allImages = [c.imageUrl, ...(c.extraImages ?? [])].filter(Boolean) as string[];
+      const dedupImages = allImages.filter((v, idx, arr) => arr.indexOf(v) === idx).slice(0, 8);
+
       const product = await prisma.product.upsert({
         where: { ebayListingId: c.ebayItemId },
         update: {
           title: c.title,
           priceGbp: c.priceGbp,
           conditionGrade: c.condition ?? inferCondition(c.title),
+          primaryImageUrl: c.imageUrl || null,
+          imageUrls: dedupImages,
+          descriptionHtml: c.description ?? null,
           ebaySyncAt: new Date(),
         },
         create: {
@@ -287,6 +293,9 @@ async function main() {
           conditionGrade: c.condition ?? inferCondition(c.title),
           priceGbp: c.priceGbp,
           costGbp: Math.round(c.priceGbp * 0.72),
+          primaryImageUrl: c.imageUrl || null,
+          imageUrls: dedupImages,
+          descriptionHtml: c.description ?? null,
           warrantyMonths: 12,
           ebayListingId: c.ebayItemId,
           ebaySyncAt: new Date(),

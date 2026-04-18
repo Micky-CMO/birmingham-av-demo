@@ -78,7 +78,9 @@ export async function listProducts(query: ProductListQuery): Promise<{
 
   const items: ListedProduct[] = rows.map((p) => {
     const raw = catalogById.get(p.productId);
-    const image = raw?.images?.find((i) => i.isPrimary) ?? raw?.images?.[0];
+    const mongoImage = raw?.images?.find((i) => i.isPrimary)?.url ?? raw?.images?.[0]?.url ?? null;
+    // Priority: Postgres primaryImageUrl (always available) -> first Postgres imageUrls -> Mongo
+    const imageUrl = p.primaryImageUrl ?? p.imageUrls?.[0] ?? mongoImage;
     const cpu = raw?.specs?.cpu?.model ?? null;
     const gpu = raw?.specs?.gpu?.model ?? null;
     const ram = raw?.specs?.memory?.sizeGb ? `${raw.specs.memory.sizeGb}GB` : null;
@@ -92,7 +94,7 @@ export async function listProducts(query: ProductListQuery): Promise<{
       conditionGrade: p.conditionGrade,
       priceGbp: Number(p.priceGbp),
       compareAtGbp: p.compareAtGbp ? Number(p.compareAtGbp) : null,
-      imageUrl: image?.url ?? null,
+      imageUrl,
       specLine,
       inStock: (p.inventory?.stockQty ?? 0) > 0,
     };

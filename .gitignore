@@ -31,6 +31,9 @@ logs/
 public/product-images/
 public/return-photos/
 tmp/
+.ebay-cookies.txt
+packages/db/.ebay-cookies.txt
+packages/db/.env
 
 prisma/migrations/dev.db*
 
