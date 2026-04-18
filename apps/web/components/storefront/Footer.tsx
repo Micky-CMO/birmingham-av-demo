@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/brand/Logo';
+import { PaymentRow } from './PaymentRow';
 
 const columns: Array<{ title: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -72,7 +73,14 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-ink-300/60 pt-6 text-caption text-ink-500 sm:mt-12 sm:pt-8 sm:text-small sm:flex-row sm:items-center dark:border-obsidian-500/60">
+        <div className="mt-8 flex flex-col items-start gap-3 border-t border-ink-300/60 pt-6 sm:mt-12 sm:flex-row sm:items-center sm:justify-between sm:pt-8 dark:border-obsidian-500/60">
+          <span className="font-mono text-caption uppercase tracking-widest text-ink-500">
+            Secure checkout accepts
+          </span>
+          <PaymentRow />
+        </div>
+
+        <div className="mt-6 flex flex-col items-start justify-between gap-3 border-t border-ink-300/60 pt-6 text-caption text-ink-500 sm:pt-6 sm:text-small sm:flex-row sm:items-center dark:border-obsidian-500/60">
           <span>&copy; {new Date().getFullYear()} Birmingham AV Ltd. Registered in England, no. 12383651.</span>
           <div className="flex items-center gap-5 font-mono text-caption">
             <Link
