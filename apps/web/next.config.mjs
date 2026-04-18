@@ -6,6 +6,11 @@ const nextConfig = {
     optimizePackageImports: ['framer-motion'],
   },
   images: {
+    // DiceBear returns SVG avatars. Next Image rejects SVG by default, so
+    // builder avatars silently 400 in production. Enable SVG and lock down
+    // the CSP so it stays safe.
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       { protocol: 'https', hostname: 'i.ebayimg.com' },
       { protocol: 'https', hostname: 'i1.ebayimg.com' },

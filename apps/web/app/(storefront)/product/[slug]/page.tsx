@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge, GlassCard } from '@/components/ui';
-import { getProductBySlug } from '@/lib/services/products';
+import { getProductBySlug, defaultImageFor } from '@/lib/services/products';
 import { formatGbp } from '@bav/lib';
 import { AddToCartButton } from './AddToCartButton';
 import { StockUrgency, SavingsBadge } from '@/components/storefront/StockUrgency';
@@ -90,12 +90,12 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const { product } = data;
   const catalog = data.catalog as Catalog | null;
 
-  // --- Primary image: Postgres → Mongo → null ------------------------------
-  const primaryImageUrl: string | null =
+  // --- Primary image: Postgres -> Mongo -> category default stock photo ----
+  const primaryImageUrl: string =
     product.primaryImageUrl ??
     catalog?.images?.find((i) => i.isPrimary)?.url ??
     catalog?.images?.[0]?.url ??
-    null;
+    defaultImageFor(product.category?.slug);
 
   // --- Gallery: merge Postgres imageUrls with Mongo catalog.images, dedupe -
   type GalleryImage = { url: string; alt: string };

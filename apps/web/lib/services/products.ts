@@ -3,6 +3,36 @@ import { connectMongo, ProductCatalog } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
 import type { ProductListQuery } from '@bav/lib/schemas';
 
+/**
+ * Category-specific stock photography fallback. Used when neither the
+ * Postgres imageUrls array nor the Mongo catalog has an image. Ensures every
+ * product card on the site shows a real photo rather than the icon placeholder.
+ * All URLs verified to resolve from Unsplash CDN.
+ */
+const CATEGORY_DEFAULT_IMAGE: Record<string, string> = {
+  'all-in-one-pc': 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=1200&q=82&auto=format&fit=crop',
+  computers: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1200&q=82&auto=format&fit=crop',
+  'gaming-pc-bundles': 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1200&q=82&auto=format&fit=crop',
+  laptops: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200&q=82&auto=format&fit=crop',
+  monitors: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=1200&q=82&auto=format&fit=crop',
+  projectors: 'https://images.unsplash.com/photo-1517971129774-8a2b38fa128e?w=1200&q=82&auto=format&fit=crop',
+  'projector-lenses': 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1200&q=82&auto=format&fit=crop',
+  printers: 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=1200&q=82&auto=format&fit=crop',
+  'av-switches': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&q=82&auto=format&fit=crop',
+  parts: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=1200&q=82&auto=format&fit=crop',
+  'hard-drive': 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=1200&q=82&auto=format&fit=crop',
+  'power-supply-chargers': 'https://images.unsplash.com/photo-1623040622440-6e27116ef8cb?w=1200&q=82&auto=format&fit=crop',
+  'network-equipment': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&q=82&auto=format&fit=crop',
+  other: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1200&q=82&auto=format&fit=crop',
+};
+const CATEGORY_DEFAULT_FALLBACK =
+  'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?w=1200&q=82&auto=format&fit=crop';
+
+export function defaultImageFor(categorySlug: string | null | undefined): string {
+  if (!categorySlug) return CATEGORY_DEFAULT_FALLBACK;
+  return CATEGORY_DEFAULT_IMAGE[categorySlug] ?? CATEGORY_DEFAULT_FALLBACK;
+}
+
 type CatalogLean = {
   postgresProductId: string;
   images?: Array<{ url: string; alt?: string; isPrimary?: boolean }>;
@@ -58,7 +88,7 @@ export async function listProducts(query: ProductListQuery): Promise<{
       orderBy,
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
-      include: { inventory: true },
+      include: { inventory: true, category: { select: { slug: true } } },
     }),
   ]);
 
@@ -79,8 +109,12 @@ export async function listProducts(query: ProductListQuery): Promise<{
   const items: ListedProduct[] = rows.map((p) => {
     const raw = catalogById.get(p.productId);
     const mongoImage = raw?.images?.find((i) => i.isPrimary)?.url ?? raw?.images?.[0]?.url ?? null;
-    // Priority: Postgres primaryImageUrl (always available) -> first Postgres imageUrls -> Mongo
-    const imageUrl = p.primaryImageUrl ?? p.imageUrls?.[0] ?? mongoImage;
+    // Priority: Postgres primaryImageUrl -> Postgres imageUrls[0] -> Mongo catalog -> category default stock photo
+    const imageUrl =
+      p.primaryImageUrl ??
+      p.imageUrls?.[0] ??
+      mongoImage ??
+      defaultImageFor(p.category?.slug);
     const cpu = raw?.specs?.cpu?.model ?? null;
     const gpu = raw?.specs?.gpu?.model ?? null;
     const ram = raw?.specs?.memory?.sizeGb ? `${raw.specs.memory.sizeGb}GB` : null;
