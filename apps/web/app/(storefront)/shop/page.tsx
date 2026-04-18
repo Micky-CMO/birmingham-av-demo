@@ -6,9 +6,9 @@ import { getFilterAggregates } from '@/lib/services/filters';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
 
 export const metadata: Metadata = {
-  title: 'Shop refurbished PCs',
+  title: 'Shop PCs: new and refurbished',
   description:
-    'Shop every Birmingham AV refurbished PC: filter by CPU, GPU, RAM, price, builder, and condition grade. Each unit tested, warrantied, and built in Birmingham.',
+    'Shop every Birmingham AV PC, new and refurbished: filter by CPU, GPU, RAM, price, builder, and condition grade. Each unit tested, warrantied, and built in Birmingham.',
 };
 export const dynamic = 'force-dynamic';
 
@@ -24,18 +24,18 @@ export default async function ShopPage({
   const [{ items, total }, aggregates] = await Promise.all([listProducts(query), getFilterAggregates()]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <header className="flex items-end justify-between">
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-500">Catalog</p>
-          <h1 className="mt-2 font-display text-[clamp(2rem,4vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em]">
+          <h1 className="mt-1 font-display text-[clamp(1.75rem,7vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em] sm:mt-2">
             All products
           </h1>
-          <p className="mt-2 text-small text-ink-500">{total.toLocaleString('en-GB')} items</p>
+          <p className="mt-1 text-small text-ink-500 sm:mt-2">{total.toLocaleString('en-GB')} items</p>
         </div>
       </header>
 
-      <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         <FilterPanel
           categories={aggregates.categories}
           cpuFamilies={aggregates.cpuFamilies}
@@ -47,20 +47,18 @@ export default async function ShopPage({
 
         <div>
           {items.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-ink-300 p-16 text-center text-ink-500 dark:border-obsidian-500">
+            <div className="rounded-lg border border-dashed border-ink-300 p-10 text-center text-ink-500 sm:p-16 dark:border-obsidian-500">
               No products match these filters.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3">
               {items.map((p) => (
                 <ProductCard key={p.productId} product={p} />
               ))}
             </div>
           )}
 
-          {total > query.pageSize && (
-            <Pagination total={total} query={query} />
-          )}
+          {total > query.pageSize && <Pagination total={total} query={query} />}
         </div>
       </div>
     </div>

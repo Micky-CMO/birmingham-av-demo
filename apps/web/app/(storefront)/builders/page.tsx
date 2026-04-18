@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db';
 export const metadata: Metadata = {
   title: 'Our builders',
   description:
-    'Meet the Birmingham AV builders: browse every bench technician by tier, quality score, workshop, and current wait time before you order your refurbished PC.',
+    'Meet the Birmingham AV builders: browse every bench technician by tier, quality score, workshop, and current wait time before you order your new or refurbished PC.',
 };
 export const dynamic = 'force-dynamic';
 

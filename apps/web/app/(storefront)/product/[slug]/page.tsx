@@ -18,14 +18,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!data) {
     return {
       title: 'Product not found',
-      description: 'This refurbished PC listing is no longer available at Birmingham AV.',
+      description: 'This PC listing is no longer available at Birmingham AV.',
     };
   }
   const { product } = data;
   const priceLabel = formatGbp(Number(product.priceGbp));
   const subtitle = product.subtitle ? ` ${product.subtitle}.` : '';
   const description =
-    `${product.title} refurbished PC from Birmingham AV, built by ${product.builder.displayName}.${subtitle} ${priceLabel} with 12-month warranty.`.slice(
+    `${product.title} from Birmingham AV, built by ${product.builder.displayName}.${subtitle} ${priceLabel} with 12-month warranty.`.slice(
       0,
       159,
     );
@@ -131,23 +131,20 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const inStock = stockQty > 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
-      <nav className="mb-6 flex items-center gap-2 text-caption text-ink-500">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-12">
+      <nav className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-500 sm:mb-6">
         <Link href="/shop" className="hover:text-ink-900 dark:hover:text-ink-50">
           Shop
         </Link>
         <span>/</span>
-        <Link
-          href={`/shop/${product.category.slug}`}
-          className="hover:text-ink-900 dark:hover:text-ink-50"
-        >
+        <Link href={`/shop/${product.category.slug}`} className="hover:text-ink-900 dark:hover:text-ink-50">
           {product.category.name}
         </Link>
         <span>/</span>
-        <span className="text-ink-900 dark:text-ink-300">{product.title}</span>
+        <span className="line-clamp-1 text-ink-900 dark:text-ink-300">{product.title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-12">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-10">
         <div className="md:col-span-7">
           <GlassCard className="relative aspect-[4/3] overflow-hidden">
             <Image
@@ -161,13 +158,13 @@ export default async function ProductPage({ params }: { params: { slug: string }
             />
           </GlassCard>
           {thumbs.length > 1 && (
-            <div className="mt-4 grid grid-cols-5 gap-2">
+            <div className="mt-3 grid grid-cols-5 gap-2 sm:mt-4">
               {thumbs.map((img) => (
                 <div
                   key={img.url}
                   className="relative aspect-square overflow-hidden rounded-md border border-ink-300/60 dark:border-obsidian-500/60"
                 >
-                  <Image src={img.url} alt={img.alt} fill className="object-cover" />
+                  <Image src={img.url} alt={img.alt} fill sizes="20vw" className="object-cover" />
                 </div>
               ))}
             </div>
@@ -184,23 +181,27 @@ export default async function ProductPage({ params }: { params: { slug: string }
               />
             )}
           </div>
-          <h1 className="mt-3 text-h1 font-display">{product.title}</h1>
-          {product.subtitle && <p className="mt-2 text-ink-500">{product.subtitle}</p>}
+          <h1 className="mt-3 font-display text-[clamp(1.5rem,6vw,2.5rem)] font-semibold leading-[1.1] tracking-[-0.025em]">
+            {product.title}
+          </h1>
+          {product.subtitle && <p className="mt-2 text-small text-ink-500 sm:text-base">{product.subtitle}</p>}
 
-          <div className="mt-6 flex items-baseline gap-4">
-            <span className="text-display-lg font-display">{formatGbp(Number(product.priceGbp))}</span>
+          <div className="mt-4 flex items-baseline gap-3 sm:mt-6 sm:gap-4">
+            <span className="font-display text-[clamp(1.75rem,8vw,3.5rem)] font-semibold leading-none tracking-[-0.03em]">
+              {formatGbp(Number(product.priceGbp))}
+            </span>
             {product.compareAtGbp && (
-              <span className="text-ink-500 line-through">
+              <span className="text-small text-ink-500 line-through sm:text-base">
                 {formatGbp(Number(product.compareAtGbp))}
               </span>
             )}
           </div>
 
-          <div className="mt-4">
+          <div className="mt-3 sm:mt-4">
             <StockUrgency stockQty={stockQty} />
           </div>
 
-          <div className="mt-8">
+          <div className="mt-5 sm:mt-8">
             <AddToCartButton
               productId={product.productId}
               title={product.title}
@@ -211,18 +212,18 @@ export default async function ProductPage({ params }: { params: { slug: string }
             />
           </div>
 
-          <section className="mt-8">
+          <section className="mt-6 sm:mt-8">
             <h2 className="text-caption uppercase tracking-wider text-ink-500">Description</h2>
             <div
-              className="prose prose-sm mt-2 max-w-none space-y-3 text-body text-ink-700 [&_strong]:text-ink-900 dark:prose-invert dark:text-ink-300 dark:[&_strong]:text-ink-50"
+              className="prose prose-sm mt-2 max-w-none space-y-3 text-small text-ink-700 sm:text-body [&_strong]:text-ink-900 dark:prose-invert dark:text-ink-300 dark:[&_strong]:text-ink-50"
               // eslint-disable-next-line react/no-danger
               dangerouslySetInnerHTML={{ __html: descriptionHtml }}
             />
           </section>
 
-          <GlassCard className="mt-8 p-6">
+          <GlassCard className="mt-6 p-5 sm:mt-8 sm:p-6">
             <div className="text-caption text-ink-500">Built by</div>
-            <div className="mt-1 flex items-center justify-between">
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
               <Link
                 href={`/builders/${product.builder.builderCode}`}
                 className="text-body font-medium hover:text-brand-green"
@@ -230,7 +231,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
                 {product.builder.displayName}
               </Link>
               <span className="font-mono text-caption text-ink-500">
-                {Number(product.builder.qualityScore).toFixed(2)} / 5 ·{' '}
+                {Number(product.builder.qualityScore).toFixed(2)} / 5 &middot;{' '}
                 {product.builder.totalUnitsBuilt.toLocaleString('en-GB')} builds
               </span>
             </div>
@@ -255,24 +256,28 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <RecentlyViewed excludeId={product.productId} />
 
       {catalog?.specs && Object.keys(catalog.specs).length > 0 && (
-        <section className="mt-16">
-          <h2 className="text-h2 font-display">Specifications</h2>
-          <div className="mt-6 overflow-hidden rounded-lg border border-ink-300/60 dark:border-obsidian-500/60">
-            <table className="w-full font-mono text-small">
-              <tbody>
-                {flattenSpecs(catalog.specs).map((row) => (
-                  <tr
-                    key={row.k}
-                    className="border-b border-ink-300/40 last:border-0 dark:border-obsidian-500/40"
-                  >
-                    <th className="w-1/3 bg-ink-50 px-4 py-3 text-left text-ink-500 dark:bg-obsidian-800">
-                      {row.k}
-                    </th>
-                    <td className="px-4 py-3">{row.v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <section className="mt-12 sm:mt-16">
+          <h2 className="font-display text-[clamp(1.5rem,6vw,1.75rem)] font-semibold tracking-[-0.02em] sm:text-h2">
+            Specifications
+          </h2>
+          <div className="mt-4 overflow-hidden rounded-lg border border-ink-300/60 sm:mt-6 dark:border-obsidian-500/60">
+            <div className="overflow-x-auto">
+              <table className="w-full font-mono text-small">
+                <tbody>
+                  {flattenSpecs(catalog.specs).map((row) => (
+                    <tr
+                      key={row.k}
+                      className="border-b border-ink-300/40 last:border-0 dark:border-obsidian-500/40"
+                    >
+                      <th className="w-1/3 bg-ink-50 px-3 py-2.5 text-left align-top text-ink-500 sm:px-4 sm:py-3 dark:bg-obsidian-800">
+                        {row.k}
+                      </th>
+                      <td className="px-3 py-2.5 align-top sm:px-4 sm:py-3">{row.v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       )}
@@ -308,19 +313,23 @@ function generateRichDescription(p: {
   if (hdd) specs.push(`${hdd} HDD`);
   if (os) specs.push(os.replace(/win\s*/i, 'Windows '));
 
-  const specLine = specs.length > 0 ? specs.join(' · ') : null;
+  const specLine = specs.length > 0 ? specs.join(' \u00b7 ') : null;
 
-  // Category-specific opener
+  // Category-specific opener. We key off the per-product condition grade so
+  // brand-new units don't read as "refurbished" while genuinely refurbished
+  // stock still gets the right language.
+  const isNew = /^brand\s*new|new$/i.test(p.conditionGrade.trim());
+  const qualifier = isNew ? 'brand-new' : 'carefully refurbished';
   const cat = p.categoryName.toLowerCase();
   let opener: string;
   if (cat.includes('laptop')) {
-    opener = `A carefully refurbished laptop${specLine ? ` packing ${specLine}` : ''}. Quiet, battery-checked, ready for a new owner.`;
+    opener = `A ${qualifier} laptop${specLine ? ` packing ${specLine}` : ''}. Quiet, battery-checked, ready for a new owner.`;
   } else if (cat.includes('gaming')) {
     opener = `A hand-built gaming rig${specLine ? ` with ${specLine}` : ''}. Bench-tested on real games, not synthetic benchmarks alone.`;
   } else if (cat.includes('monitor')) {
     opener = `A fully tested display, calibrated and panel-checked. Pixel-perfect out of the box.`;
   } else if (cat.includes('all-in-one')) {
-    opener = `An all-in-one refurbished PC${specLine ? ` running ${specLine}` : ''}. One clean unit, zero clutter.`;
+    opener = `An all-in-one ${qualifier} PC${specLine ? ` running ${specLine}` : ''}. One clean unit, zero clutter.`;
   } else if (cat.includes('network')) {
     opener = `Enterprise network kit, bench-tested, port-by-port verified, and factory-reset before shipping.`;
   } else if (cat.includes('projector')) {
@@ -328,13 +337,13 @@ function generateRichDescription(p: {
   } else if (cat.includes('parts')) {
     opener = `A tested component ready to drop into your build${specLine ? ` (${specLine})` : ''}. Verified working before dispatch.`;
   } else if (cat.includes('power')) {
-    opener = `A tested power supply — voltage regulation, ripple, and load-bearing verified under real conditions.`;
+    opener = `A tested power supply: voltage regulation, ripple, and load-bearing verified under real conditions.`;
   } else if (cat.includes('hard')) {
     opener = `A tested storage device with SMART health checked and surface-scanned end-to-end before it left the bench.`;
   } else if (cat.includes('printer')) {
-    opener = `A refurbished printer, test-printed, cleaned, and calibrated. Ready for day-one use.`;
+    opener = `A ${qualifier} printer, test-printed, cleaned, and calibrated. Ready for day-one use.`;
   } else {
-    opener = `A professionally refurbished ${p.categoryName.toLowerCase()} from Birmingham AV${specLine ? `, featuring ${specLine}` : ''}.`;
+    opener = `A ${isNew ? 'brand-new' : 'professionally refurbished'} ${p.categoryName.toLowerCase()} from Birmingham AV${specLine ? `, featuring ${specLine}` : ''}.`;
   }
 
   return [

@@ -13,6 +13,7 @@ const NAV = [
   { href: '/admin/returns', label: 'Returns' },
   { href: '/admin/support', label: 'Support' },
   { href: '/admin/products', label: 'Products' },
+  { href: '/admin/settings', label: 'Settings' },
 ];
 
 export const dynamic = 'force-dynamic';

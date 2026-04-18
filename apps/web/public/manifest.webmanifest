@@ -1,7 +1,7 @@
 {
   "name": "Birmingham AV",
   "short_name": "BAV",
-  "description": "Refurbished PCs, built by people who know them. Tested, warrantied, and shipped from Birmingham.",
+  "description": "PCs and tech, new and refurbished, built by people who know them. Tested, warrantied, and shipped from Birmingham.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -22,7 +22,7 @@
     { "name": "Start a return", "short_name": "Return", "url": "/returns/new", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
   ],
   "screenshots": [
-    { "src": "/brand/hero-poster.jpg", "sizes": "1920x1080", "type": "image/jpeg", "form_factor": "wide", "label": "Refurbished PCs, built by people who know them." }
+    { "src": "/brand/hero-poster.jpg", "sizes": "1920x1080", "type": "image/jpeg", "form_factor": "wide", "label": "PCs and tech, new and refurbished, built by people who know them." }
   ],
   "prefer_related_applications": false
 }

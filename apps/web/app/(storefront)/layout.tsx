@@ -8,12 +8,12 @@ import { SmoothScroll } from '@/components/fx/SmoothScroll';
 import { PageLoader } from '@/components/fx/PageLoader';
 import { ScrollProgressBar } from '@/components/fx/ScrollProgressBar';
 import { PWAInstaller } from '@/components/fx/PWAInstaller';
-import { InteractiveBackground } from '@/components/fx/InteractiveBackground';
+import { AmbientBackground } from '@/components/fx/AmbientBackground';
 
 export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col">
-      <InteractiveBackground />
+      <AmbientBackground />
       <SmoothScroll />
       <PageLoader />
       <ScrollProgressBar />

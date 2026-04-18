@@ -5,7 +5,7 @@ import { Button, GlassCard } from '@/components/ui';
 export const metadata: Metadata = {
   title: 'Support',
   description:
-    'Get support from Birmingham AV for order queries, returns, and warranty claims on your refurbished PC, with live chat and ticket options.',
+    'Get support from Birmingham AV for order queries, returns, and warranty claims on your PC, new or refurbished, with live chat and ticket options.',
 };
 
 export default function SupportPage() {

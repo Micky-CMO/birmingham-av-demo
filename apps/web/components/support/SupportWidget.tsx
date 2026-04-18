@@ -63,7 +63,8 @@ export function SupportWidget() {
         type="button"
         aria-label="Open support chat"
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-green text-white shadow-ring-green hover:bg-brand-green-600"
+        className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-green text-white shadow-ring-green hover:bg-brand-green-600 sm:bottom-5 sm:right-5 sm:h-14 sm:w-14"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <ChatIcon />
       </button>
@@ -75,9 +76,9 @@ export function SupportWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-24 right-5 z-40 w-[360px] max-w-[calc(100vw-2.5rem)]"
+            className="fixed inset-x-4 bottom-[4.5rem] z-40 sm:inset-x-auto sm:bottom-24 sm:right-5 sm:w-[360px]"
           >
-            <GlassCard className="flex h-[520px] flex-col overflow-hidden bg-white/95 dark:bg-obsidian-900/95">
+            <GlassCard className="flex h-[72dvh] max-h-[560px] flex-col overflow-hidden bg-white/95 sm:h-[520px] dark:bg-obsidian-900/95">
               <header className="flex items-center justify-between border-b border-ink-300/60 px-4 py-3 dark:border-obsidian-500/60">
                 <div>
                   <div className="text-small font-medium">Birmingham AV support</div>
@@ -87,7 +88,7 @@ export function SupportWidget() {
                   type="button"
                   aria-label="Close chat"
                   onClick={() => setOpen(false)}
-                  className="text-ink-500 hover:text-ink-900 dark:hover:text-ink-50"
+                  className="flex h-10 w-10 items-center justify-center rounded-md text-xl text-ink-500 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-obsidian-800 dark:hover:text-ink-50"
                 >
                   &times;
                 </button>

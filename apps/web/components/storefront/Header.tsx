@@ -62,13 +62,13 @@ export function Header() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
       className={cn(
-        'sticky top-0 z-40 h-[72px] w-full border-b transition-all duration-420',
+        'sticky top-0 z-40 h-16 w-full border-b transition-all duration-420 sm:h-[72px]',
         scrolled
-          ? 'border-ink-300/60 bg-white/65 shadow-glass-light backdrop-blur-glass dark:border-obsidian-500/60 dark:bg-obsidian-900/65 dark:shadow-glass-dark'
+          ? 'border-ink-300/60 bg-white/75 shadow-glass-light backdrop-blur-sm sm:backdrop-blur-glass dark:border-obsidian-500/60 dark:bg-obsidian-900/75 dark:shadow-glass-dark'
           : 'border-transparent bg-gradient-to-b from-ink-50/60 to-transparent dark:from-obsidian-950/40',
       )}
     >
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:gap-6 sm:px-6">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-1.5 px-3 xs:gap-2 xs:px-4 sm:gap-6 sm:px-6">
         <Logo priority />
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -77,7 +77,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2">
           <button
             type="button"
             aria-label="Search"
@@ -86,23 +86,25 @@ export function Header() {
           >
             <SearchIcon />
           </button>
-          <PWAInstallChip />
+          <div className="hidden sm:flex">
+            <PWAInstallChip />
+          </div>
           <ThemeToggle />
           <Link
             href="/account"
             aria-label="Account"
-            className="hidden h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800 sm:flex"
+            className="hidden h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800 xsm:flex"
           >
             <UserIcon />
           </Link>
           <button
             type="button"
-            aria-label="Cart"
+            aria-label={`Cart, ${cartCount} items`}
             onClick={() => setCartOpen(true)}
-            className="relative flex h-11 min-w-11 items-center justify-center gap-2 rounded-md bg-ink-100 px-3 text-small font-medium text-ink-900 transition-all hover:bg-ink-300/60 dark:bg-obsidian-800 dark:text-ink-50 dark:hover:bg-obsidian-700"
+            className="relative flex h-11 min-w-11 items-center justify-center gap-2 rounded-md bg-ink-100 px-2.5 text-small font-medium text-ink-900 transition-all hover:bg-ink-300/60 xs:px-3 dark:bg-obsidian-800 dark:text-ink-50 dark:hover:bg-obsidian-700"
           >
             <BagIcon />
-            <span className="hidden sm:inline">Cart</span>
+            <span className="hidden xs:inline">Cart</span>
             {cartCount > 0 && (
               <motion.span
                 key={cartCount}
@@ -136,9 +138,9 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 top-[72px] z-40 flex flex-col bg-white/95 backdrop-blur-glass dark:bg-obsidian-950/95 md:hidden"
+            className="fixed inset-0 top-16 z-40 flex flex-col overflow-y-auto bg-white/97 backdrop-blur-sm sm:top-[72px] dark:bg-obsidian-950/97 md:hidden"
           >
-            <nav className="flex flex-col gap-1 px-4 py-6">
+            <nav className="flex flex-col gap-1 px-4 pb-10 pt-4">
               {NAV.map((item, i) => (
                 <motion.div
                   key={item.href + item.label}
@@ -149,7 +151,7 @@ export function Header() {
                   <Link
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className="flex min-h-11 items-center rounded-md px-4 py-3 text-lg font-medium text-ink-900 transition-colors hover:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
+                    className="flex min-h-12 items-center rounded-md px-4 py-3 text-base font-medium text-ink-900 transition-colors hover:bg-ink-100 active:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
                   >
                     {item.label}
                   </Link>
@@ -164,7 +166,7 @@ export function Header() {
                 <Link
                   href="/account"
                   onClick={() => setMobileOpen(false)}
-                  className="flex min-h-11 items-center rounded-md px-4 py-3 text-lg font-medium text-ink-900 transition-colors hover:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
+                  className="flex min-h-12 items-center rounded-md px-4 py-3 text-base font-medium text-ink-900 transition-colors hover:bg-ink-100 active:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
                 >
                   Account
                 </Link>

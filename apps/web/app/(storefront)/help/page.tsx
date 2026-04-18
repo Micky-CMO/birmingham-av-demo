@@ -6,7 +6,7 @@ import { GlassCard, Button } from '@/components/ui';
 export const metadata: Metadata = {
   title: 'Help centre',
   description:
-    'Birmingham AV help centre: answers on refurbished PC delivery, returns, warranty, upgrades, payment methods, and builder assignment.',
+    'Birmingham AV help centre: answers on PC delivery, returns, warranty, upgrades, payment methods, and builder assignment for new and refurbished kit.',
 };
 
 const FAQS = [
@@ -15,8 +15,8 @@ const FAQS = [
     a: 'UK mainland orders placed before 3pm ship same day for next-working-day delivery. Highlands + Islands typically 2 working days.',
   },
   {
-    q: 'Are your PCs actually new?',
-    a: 'No, and that is the point. Our PCs are refurbished, tested, and priced well below new. Each unit ships with a 12-month warranty and a condition grade from Like New to Good.',
+    q: 'Are your PCs new or refurbished?',
+    a: 'Both. We sell brand-new machines alongside professionally refurbished ones, bench-tested and priced well below new. Every unit ships with a 12-month warranty and a clearly labelled condition grade, from Brand New through Like New to Good.',
   },
   {
     q: 'What if my PC arrives faulty?',

@@ -1,16 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import Image from 'next/image';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui';
 import { MagneticButton } from '@/components/fx/MagneticButton';
 import { AmbientBeams } from '@/components/fx/AmbientBeams';
 
 /**
- * Cinematic hero. Full-bleed video plate fills the top viewport, then a
- * dedicated editorial section below with massive kinetic headline, eyebrow,
- * body copy, CTAs, and a data strip.
+ * Cinematic hero. On tablet+ we run the full-bleed video plate with kinetic
+ * parallax. On narrow portrait phones we render a dedicated mobile hero that
+ * anchors the poster image inside a rounded card (video clipping a 9:19 phone
+ * is brutal), stacks headline and CTAs vertically, and keeps the editorial
+ * band legible at 360px. The mobile path also skips the heaviest Framer
+ * transforms to protect the frame rate on mid-range Android.
  */
 export function HeroVideo() {
   const ref = useRef<HTMLDivElement>(null);
@@ -18,13 +22,24 @@ export function HeroVideo() {
   const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
   const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
   const videoOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.4]);
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
 
   return (
     <section ref={ref} className="relative w-full overflow-hidden bg-ink-50 dark:bg-obsidian-950">
       <AmbientBeams />
 
-      {/* ============ VIDEO PLATE ============ */}
-      <div className="relative h-[82vh] min-h-[480px] w-full overflow-hidden sm:h-[78vh] sm:min-h-[560px]">
+      {/* ============ VIDEO PLATE (sm+) ============ */}
+      <div className="relative hidden h-[78vh] min-h-[560px] w-full overflow-hidden sm:block md:h-[82vh]">
         <motion.div style={{ y: videoY, scale: videoScale, opacity: videoOpacity }} className="absolute inset-0">
           <video
             autoPlay
@@ -33,7 +48,7 @@ export function HeroVideo() {
             playsInline
             preload="auto"
             poster="/brand/hero-poster.jpg"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover object-center"
           >
             <source src="/brand/hero.mp4" type="video/mp4" />
           </video>
@@ -64,11 +79,10 @@ export function HeroVideo() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute left-1/2 top-6 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/60 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-900 backdrop-blur-glass dark:border-white/10 dark:bg-obsidian-900/60 dark:text-ink-50 sm:top-8 sm:px-4 sm:py-2 sm:text-caption sm:tracking-[0.2em]"
+          className="absolute left-1/2 top-8 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/60 px-4 py-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-900 backdrop-blur-glass dark:border-white/10 dark:bg-obsidian-900/60 dark:text-ink-50"
         >
           <span className="inline-block h-1.5 w-1.5 animate-pulse-green rounded-full bg-brand-green" />
-          <span className="sm:hidden">Since 2020 · B'ham built</span>
-          <span className="hidden sm:inline">Since 2020 · Hand-built in Birmingham</span>
+          <span>Since 2020 &middot; Hand-built in Birmingham</span>
         </motion.div>
 
         {/* Corner metadata (cinema style) */}
@@ -79,7 +93,7 @@ export function HeroVideo() {
           className="absolute left-6 top-8 z-10 hidden items-center gap-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-500 md:flex"
         >
           <span>BAV</span>
-          <span>·</span>
+          <span>&middot;</span>
           <span>REEL 01</span>
         </motion.div>
 
@@ -89,9 +103,9 @@ export function HeroVideo() {
           transition={{ delay: 1.5, duration: 1.5 }}
           className="absolute right-6 top-8 z-10 hidden items-center gap-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-500 md:flex"
         >
-          <span>B'HAM · UK</span>
-          <span>·</span>
-          <span>REFURB</span>
+          <span>B&apos;HAM &middot; UK</span>
+          <span>&middot;</span>
+          <span>NEW + REFURB</span>
         </motion.div>
 
         {/* Scroll indicator */}
@@ -102,13 +116,85 @@ export function HeroVideo() {
           className="absolute bottom-16 left-1/2 z-10 -translate-x-1/2 font-mono text-caption uppercase tracking-[0.3em] text-ink-500"
         >
           <motion.span animate={{ y: [0, 6, 0] }} transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}>
-            scroll ↓
+            scroll &darr;
           </motion.span>
         </motion.div>
       </div>
 
-      {/* ============ EDITORIAL BAND ============ */}
-      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-6 sm:px-6 md:pb-32 md:pt-12">
+      {/* ============ MOBILE HERO (<sm) ============ */}
+      {/* A dedicated compact hero for portrait phones. Replaces the 16:9 video
+          with a tall rounded poster card so the crop stays flattering, keeps
+          the headline to a readable clamp, and shows stacked full-width CTAs. */}
+      <div className="relative block px-4 pb-6 pt-5 sm:hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-ink-300/60 bg-white/80 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-900 backdrop-blur-sm dark:border-obsidian-500/60 dark:bg-obsidian-900/70 dark:text-ink-50"
+        >
+          <span className="inline-block h-1.5 w-1.5 animate-pulse-green rounded-full bg-brand-green" />
+          <span className="truncate">Since 2020 &middot; Birmingham built</span>
+        </motion.div>
+
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-ink-300/40 bg-obsidian-950 shadow-glass-light dark:border-obsidian-500/50">
+          {isMobile && !prefersReducedMotion ? (
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster="/brand/hero-poster.jpg"
+              className="h-full w-full object-cover object-center"
+              aria-hidden="true"
+            >
+              <source src="/brand/hero.mp4" type="video/mp4" />
+            </video>
+          ) : (
+            <Image
+              src="/brand/hero-poster.jpg"
+              alt=""
+              aria-hidden="true"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+          )}
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+
+          <div className="absolute inset-x-4 bottom-4 flex flex-col gap-2 text-white">
+            <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/80">
+              Spring 2026 catalogue
+            </span>
+            <h1 className="font-display text-[clamp(1.85rem,8.2vw,2.5rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-white">
+              PCs and tech, built by people who know them.
+            </h1>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-2.5">
+          <Link href="/shop" className="block">
+            <Button size="lg" className="h-12 w-full text-base">
+              Shop all PCs
+            </Button>
+          </Link>
+          <Link href="/shop/gaming-pc-bundles" className="block">
+            <Button size="lg" variant="outline" className="h-12 w-full text-base">
+              Gaming bundles
+            </Button>
+          </Link>
+        </div>
+
+        <p className="mt-4 text-small leading-relaxed text-ink-700 dark:text-ink-300">
+          New and refurbished, tested, warrantied, and shipped worldwide from the United Kingdom. Over twenty in-house builders assemble
+          every machine you buy.
+        </p>
+      </div>
+
+      {/* ============ EDITORIAL BAND (sm+ only) ============ */}
+      <div className="relative mx-auto hidden max-w-7xl px-4 pb-20 pt-6 sm:block sm:px-6 md:pb-32 md:pt-12">
         {/* Eyebrow */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -117,7 +203,7 @@ export function HeroVideo() {
           className="mb-8 flex items-center gap-3 font-mono text-caption uppercase tracking-[0.3em] text-ink-500"
         >
           <span aria-hidden className="h-px w-10 bg-brand-green" />
-          <span>The Birmingham AV catalogue · Spring 2026</span>
+          <span>The Birmingham AV catalogue &middot; Spring 2026</span>
         </motion.div>
 
         <KineticHeadline />
@@ -129,8 +215,8 @@ export function HeroVideo() {
             transition={{ delay: 1.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="text-body leading-relaxed text-ink-700 dark:text-ink-300 md:col-span-5 md:text-lg"
           >
-            Every machine is tested, warrantied, and shipped from Birmingham. Over twenty in-house builders assemble your
-            kit, sign their name against it, and stand behind it for twelve months.
+            New and refurbished machines, tested, warrantied, and shipped worldwide from the United Kingdom. Over twenty in-house builders
+            assemble your kit, sign their name against it, and stand behind it for twelve months.
           </motion.p>
 
           <motion.div
@@ -192,13 +278,13 @@ export function HeroVideo() {
   );
 }
 
-const LINE_1 = 'Refurbished PCs,';
+const LINE_1 = 'PCs and tech,';
 const LINE_2 = 'built by people';
 const LINE_3 = 'who know them.';
 
 function KineticHeadline() {
   return (
-    <h1 className="font-display text-[clamp(2.75rem,9vw,8rem)] font-semibold leading-[0.95] tracking-[-0.035em]">
+    <h1 className="font-display text-[clamp(2.5rem,8vw,8rem)] font-semibold leading-[0.95] tracking-[-0.035em]">
       <Line text={LINE_1} startDelay={0.25} />
       <Line text={LINE_2} startDelay={0.55} highlight={['people']} />
       <Line text={LINE_3} startDelay={0.95} />

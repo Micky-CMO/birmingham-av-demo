@@ -20,16 +20,18 @@ const ITEMS = [
 
 export function WhyStrip() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           return (
-            <GlassCard key={item.title} className="p-6">
+            <GlassCard key={item.title} className="p-5 sm:p-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-green-100 text-brand-green-600 dark:bg-brand-green/15 dark:text-brand-green-400">
                 <Icon />
               </div>
-              <h3 className="mt-5 text-h3 font-display">{item.title}</h3>
+              <h3 className="mt-4 font-display text-lg font-semibold tracking-[-0.015em] sm:mt-5 sm:text-h3">
+                {item.title}
+              </h3>
               <p className="mt-2 text-small text-ink-500 dark:text-ink-300">{item.body}</p>
             </GlassCard>
           );

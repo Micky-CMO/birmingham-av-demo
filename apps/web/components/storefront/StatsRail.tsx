@@ -16,15 +16,15 @@ export function StatsRail() {
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-ink-300/50 md:grid-cols-4 dark:bg-obsidian-500/40">
         {STATS.map((s, i) => (
           <ScrollReveal key={s.label} delay={i * 0.08}>
-            <div className="h-full bg-white/40 px-4 py-8 text-center backdrop-blur-sm sm:px-6 sm:py-10 md:py-14 dark:bg-obsidian-900/40">
+            <div className="h-full bg-white/40 px-3 py-6 text-center backdrop-blur-sm sm:px-6 sm:py-10 md:py-14 dark:bg-obsidian-900/40">
               <div
-                className={`font-display text-[clamp(2.2rem,5vw,3.75rem)] font-semibold leading-none tracking-[-0.02em] ${
+                className={`font-display text-[clamp(1.65rem,8vw,3.75rem)] font-semibold leading-none tracking-[-0.02em] ${
                   s.accent ? 'text-brand-green' : ''
                 }`}
               >
                 <AnimatedNumber value={s.value} format={s.format} />
               </div>
-              <div className="mt-3 font-mono text-caption uppercase tracking-widest text-ink-500 dark:text-ink-300">
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-widest text-ink-500 sm:mt-3 sm:text-caption dark:text-ink-300">
                 {s.label}
               </div>
             </div>

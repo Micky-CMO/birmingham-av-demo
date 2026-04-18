@@ -65,8 +65,10 @@ export default function CheckoutPage() {
 
   if (lines.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <h1 className="font-display text-h1">Checkout</h1>
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6 sm:py-24">
+        <h1 className="font-display text-[clamp(1.75rem,7vw,2.5rem)] font-semibold tracking-[-0.025em] sm:text-h1">
+          Checkout
+        </h1>
         <p className="mt-4 text-ink-500">Your cart is empty.</p>
         <Link href="/shop" className="mt-6 inline-block">
           <Button>Back to shop</Button>
@@ -76,11 +78,13 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <h1 className="text-h1 font-display">Checkout</h1>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="font-display text-[clamp(1.75rem,7vw,2.5rem)] font-semibold tracking-[-0.025em] sm:text-h1">
+        Checkout
+      </h1>
 
-      <form onSubmit={handleSubmit} className="mt-8 grid grid-cols-1 gap-10 md:grid-cols-12">
-        <div className="space-y-6 md:col-span-7">
+      <form onSubmit={handleSubmit} className="mt-6 grid grid-cols-1 gap-6 sm:mt-8 sm:gap-10 md:grid-cols-12">
+        <div className="space-y-5 sm:space-y-6 md:col-span-7">
           <Section title="Contact">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input name="firstName" placeholder="First name" autoComplete="given-name" required />
@@ -122,13 +126,13 @@ export default function CheckoutPage() {
           </Section>
 
           <Section title="Payment">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(['stripe_card', 'paypal', 'manual'] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setPayMethod(m)}
-                  className={`rounded-md border px-4 py-2 text-small ${
+                  className={`inline-flex min-h-11 items-center rounded-md border px-4 text-small ${
                     payMethod === m
                       ? 'border-brand-green bg-brand-green-100 text-brand-green-600 dark:bg-brand-green/15'
                       : 'border-ink-300/60 dark:border-obsidian-500/60'
@@ -149,7 +153,7 @@ export default function CheckoutPage() {
           </Section>
         </div>
 
-        <GlassCard className="h-fit p-6 md:col-span-5">
+        <GlassCard className="h-fit p-5 sm:p-6 md:col-span-5">
           <h2 className="text-h3 font-display">Order summary</h2>
           <ul className="mt-4 divide-y divide-ink-300/50 dark:divide-obsidian-500/40">
             {lines.map((l) => (
@@ -175,8 +179,8 @@ export default function CheckoutPage() {
               {error}
             </p>
           )}
-          <Button size="lg" type="submit" loading={submitting} className="mt-6 w-full">
-            Place order · {formatGbp(total)}
+          <Button size="lg" type="submit" loading={submitting} className="mt-5 h-12 w-full sm:mt-6">
+            Place order &middot; {formatGbp(total)}
           </Button>
           <p className="mt-2 text-center text-caption text-ink-500">
             By placing your order you agree to our{' '}

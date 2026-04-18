@@ -6,7 +6,7 @@ import { GlassCard, Button } from '@/components/ui';
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'Birmingham AV is a Bromsgrove refurbished-PC workshop: 22 in-house builders, seven-stage QC, and 82,000 units shipped since 2020.',
+    'Birmingham AV is a Bromsgrove PC workshop selling new and refurbished kit: 22 in-house builders, seven-stage QC, and 82,000 units shipped since 2020.',
 };
 
 export default function AboutPage() {
@@ -18,9 +18,10 @@ export default function AboutPage() {
         lead={
           <>
             <p>
-              Birmingham AV began in 2020 from a workshop in Bromsgrove with one principle: every refurbished machine
-              that leaves our door should be better than new. Six years and 82,000 units later, that principle still
-              holds. Each PC is tested on a dedicated bench, signed by the builder, and warrantied for twelve months.
+              Birmingham AV began in 2020 from a workshop in Bromsgrove with one principle: every machine that leaves
+              our door should be better than new. We now sell both new and refurbished PCs. Six years and 82,000 units
+              later, that principle still holds. Each PC is tested on a dedicated bench, signed by the builder, and
+              warrantied for twelve months.
             </p>
           </>
         }

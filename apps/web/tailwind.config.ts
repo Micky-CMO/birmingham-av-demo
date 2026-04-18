@@ -10,6 +10,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        // Small-phone breakpoints so the header can adapt on narrow devices.
+        // `xs` ~ small phones (Galaxy S8 era and up). `xsm` ~ 380px, a common
+        // mid-phone hinge. Tailwind's built-in `sm` remains 640px.
+        xs: '380px',
+        xsm: '420px',
+      },
       colors: {
         brand: {
           green: '#1EB53A',

@@ -125,6 +125,9 @@ model User {
   phone           String?
   emailVerifiedAt DateTime? @map("email_verified_at")
   mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
+  mfaSecret       String?   @map("mfa_secret") // base32 TOTP secret. Production should encrypt this at rest: plain base32 is acceptable for dev only.
+  avatarUrl       String?   @map("avatar_url")
+  bio             String?
   lastLoginAt     DateTime? @map("last_login_at")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -142,6 +145,7 @@ model User {
   messages         SupportMessage[]
   auditEntries     AuditLog[]
   builderFlagsAcked BuilderQualityFlagAck[]
+  webauthnCredentials WebauthnCredential[]
 
   @@index([role])
   @@index([deletedAt])
@@ -209,6 +213,9 @@ model Builder {
   marginGbpLifetime    Decimal        @default(0) @map("margin_gbp_lifetime") @db.Decimal(14, 2)
   flaggedByAi          Boolean        @default(false) @map("flagged_by_ai")
   lastFlagReason       String?        @map("last_flag_reason")
+  specialities         String[]       @default([])
+  yearsBuilding        Int            @default(1) @map("years_building")
+  favouriteBuild       String?        @map("favourite_build")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @updatedAt @map("updated_at")
 
@@ -617,4 +624,22 @@ model BuilderQualityFlagAck {
 
   @@unique([flagMongoId, acknowledgedBy])
   @@map("builder_quality_flag_acks")
+}
+
+model WebauthnCredential {
+  credentialId    String   @id @map("credential_id")               // base64url credential ID
+  userId          String   @map("user_id") @db.Uuid
+  publicKey       Bytes    @map("public_key")                      // credential public key, raw bytes
+  counter         BigInt   @default(0)                              // signature counter
+  transports      String[] @default([])                             // ['internal','hybrid','usb','nfc','ble']
+  deviceType      String   @default("single_device") @map("device_type") // 'single_device' | 'multi_device'
+  backedUp        Boolean  @default(false) @map("backed_up")
+  nickname        String?                                           // user-facing, e.g. "iPhone 15 Pro"
+  lastUsedAt      DateTime? @map("last_used_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
 }

@@ -3,10 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge, Button, GlassCard } from '@/components/ui';
 import { useCartStore } from '@/stores/cart';
 import { useUiStore } from '@/stores/ui';
+import { cn } from '@/lib/cn';
 import { formatGbp, truncate } from '@bav/lib';
 
 export type ProductCardModel = {
@@ -86,9 +87,35 @@ function PlaceholderIcon({ icon }: { icon: IconKey }) {
 function ImagePlaceholder({ title }: { title: string }) {
   const icon = inferIcon(title);
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-ink-100 to-ink-50 dark:from-obsidian-800 dark:to-obsidian-900">
-      <div className="text-brand-green opacity-20 flex h-full w-full items-center justify-center">
-        <PlaceholderIcon icon={icon} />
+    <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-ink-100 via-ink-50 to-ink-100 dark:from-obsidian-800 dark:via-obsidian-900 dark:to-obsidian-800">
+      {/* Corner accent glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(circle at 85% 15%, rgba(30,181,58,0.18), transparent 45%), radial-gradient(circle at 15% 85%, rgba(34,211,238,0.10), transparent 50%)',
+        }}
+      />
+      {/* Hairline grid watermark */}
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.06] dark:opacity-[0.10]"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(30,181,58,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(30,181,58,0.8) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }}
+      />
+      {/* Large centred product glyph */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="h-[62%] w-[62%] text-brand-green opacity-[0.55] drop-shadow-[0_0_24px_rgba(30,181,58,0.25)] dark:opacity-[0.7]">
+          <PlaceholderIcon icon={icon} />
+        </div>
+      </div>
+      {/* Category tag ribbon */}
+      <div className="absolute left-3 bottom-3 font-mono text-[9px] uppercase tracking-[0.2em] text-ink-500 sm:text-[10px]">
+        Birmingham AV
       </div>
     </div>
   );
@@ -106,11 +133,24 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
   const imgX = useSpring(useTransform(mx, [-0.5, 0.5], ['-3%', '3%']), { stiffness: 180, damping: 22 });
   const imgY = useSpring(useTransform(my, [-0.5, 0.5], ['-3%', '3%']), { stiffness: 180, damping: 22 });
 
+  // Only enable the 3D tilt / parallax on real pointer+hover devices. Touch
+  // users get a clean static card so scrolling doesn't trigger jittery tilt.
+  const [canTilt, setCanTilt] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const update = () => setCanTilt(mq.matches);
+    update();
+    mq.addEventListener?.('change', update);
+    return () => mq.removeEventListener?.('change', update);
+  }, []);
+
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
   const showImage = Boolean(product.imageUrl) && !imgFailed;
 
   function handleMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!canTilt) return;
     const el = cardRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
@@ -127,10 +167,10 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
       ref={cardRef}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1000 }}
-      whileHover={{ y: -4 }}
+      style={canTilt ? { rotateX: rotX, rotateY: rotY, transformPerspective: 1000 } : undefined}
+      whileHover={canTilt ? { y: -4 } : undefined}
       transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-      className="group"
+      className="group h-full"
     >
       <GlassCard className="flex h-full flex-col overflow-hidden transition-shadow duration-420 group-hover:shadow-lift">
         <Link href={`/product/${product.slug}`} className="relative block aspect-[4/3] w-full overflow-hidden rounded-t-lg">
@@ -143,7 +183,10 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
                   style={{ animation: 'shimmer 1.6s ease-in-out infinite' }}
                 />
               )}
-              <motion.div className="absolute inset-0" style={{ x: imgX, y: imgY, scale: 1.08 }}>
+              <motion.div
+                className="absolute inset-0"
+                style={canTilt ? { x: imgX, y: imgY, scale: 1.08 } : undefined}
+              >
                 <Image
                   src={product.imageUrl as string}
                   alt={product.title}
@@ -159,27 +202,35 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
             <ImagePlaceholder title={product.title} />
           )}
           <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent opacity-0 transition-opacity duration-420 group-hover:opacity-100" />
-          <div className="absolute left-3 top-3 z-10 flex gap-2">
+          <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-1.5 sm:left-3 sm:top-3 sm:gap-2">
             <Badge tone={product.inStock ? 'positive' : 'warning'}>{product.inStock ? 'In stock' : 'Low'}</Badge>
             <Badge tone="neutral">{product.conditionGrade}</Badge>
           </div>
         </Link>
-        <div className="flex flex-1 flex-col p-4">
-          <Link href={`/product/${product.slug}`} className="text-body font-medium leading-snug transition-colors hover:text-brand-green">
+        <div className="flex flex-1 flex-col p-3 sm:p-4">
+          <Link
+            href={`/product/${product.slug}`}
+            className="line-clamp-2 text-small font-medium leading-snug transition-colors hover:text-brand-green sm:text-body"
+          >
             {truncate(product.title, 72)}
           </Link>
           {product.specLine && (
-            <p className="mt-1 line-clamp-2 font-mono text-caption uppercase tracking-wider text-ink-500">{product.specLine}</p>
+            <p className="mt-1 line-clamp-2 hidden font-mono text-caption uppercase tracking-wider text-ink-500 sm:block">
+              {product.specLine}
+            </p>
           )}
-          <div className="mt-4 flex items-end justify-between">
-            <div>
+          <div className="mt-auto flex items-end justify-between gap-2 pt-3 sm:pt-4">
+            <div className="min-w-0">
               {product.compareAtGbp && (
                 <div className="text-caption text-ink-500 line-through">{formatGbp(product.compareAtGbp)}</div>
               )}
-              <div className="text-h3 font-display">{formatGbp(product.priceGbp)}</div>
+              <div className="truncate font-display text-base font-semibold tracking-[-0.015em] sm:text-h3">
+                {formatGbp(product.priceGbp)}
+              </div>
             </div>
             <Button
               size="sm"
+              aria-label={justAdded ? 'Added to cart' : `Add ${product.title} to cart`}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -195,13 +246,58 @@ export function ProductCard({ product }: { product: ProductCardModel }) {
                 setJustAdded(true);
                 window.setTimeout(() => setJustAdded(false), 1800);
               }}
-              className={justAdded ? 'bg-brand-green-600' : ''}
+              className={cn('h-9 shrink-0 px-2 sm:h-8 sm:px-3', justAdded && 'bg-brand-green-600')}
             >
-              {justAdded ? '✓ Added' : 'Add to cart'}
+              {justAdded ? (
+                <span className="inline-flex items-center gap-1">
+                  <CheckIcon />
+                  <span className="hidden xs:inline">Added</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <PlusIcon />
+                  <span className="hidden xs:inline">Add</span>
+                </span>
+              )}
             </Button>
           </div>
         </div>
       </GlassCard>
     </motion.div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12.5l5 5L20 7.5" />
+    </svg>
   );
 }

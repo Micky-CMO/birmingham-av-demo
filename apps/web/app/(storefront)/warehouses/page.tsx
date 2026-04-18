@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 export const metadata: Metadata = {
   title: 'Warehouses',
   description:
-    'Birmingham AV operates three build and dispatch warehouse hubs inside the B postcode, keeping every refurbished PC tested and shipped locally.',
+    'Birmingham AV operates three build and dispatch warehouse hubs inside the B postcode, keeping every PC, new or refurbished, tested and shipped locally.',
 };
 export const dynamic = 'force-dynamic';
 

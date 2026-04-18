@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     default: 'Birmingham AV',
     template: '%s | Birmingham AV',
   },
-  description: 'Refurbished PCs, built by people who know them. Tested, warrantied, and shipped from Birmingham.',
+  description: 'PCs and tech, new and refurbished, built by people who know them. Tested, warrantied, shipped worldwide from the United Kingdom.',
   applicationName: 'Birmingham AV',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
@@ -50,6 +50,9 @@ export const metadata: Metadata = {
     siteName: 'Birmingham AV',
     locale: 'en_GB',
     images: [{ url: '/brand/hero-poster.jpg', width: 1920, height: 1080 }],
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
   twitter: {
     card: 'summary_large_image',

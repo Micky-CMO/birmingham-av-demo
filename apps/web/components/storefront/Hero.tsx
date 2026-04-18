@@ -17,11 +17,12 @@ export function Hero() {
           className="md:col-span-7"
         >
           <h1 className="font-display text-display-lg md:text-display-xl">
-            Refurbished PCs,<br />
+            PCs and tech,<br />
             <span className="text-brand-green">built by people</span> who know them.
           </h1>
           <p className="mt-6 max-w-xl text-body text-ink-700 dark:text-ink-300 md:text-lg">
-            Tested, warrantied, and shipped from Birmingham. Over 20 in-house builders assemble every machine you buy.
+            New and refurbished, tested, warrantied, shipped worldwide from the United Kingdom. Over 20 in-house builders assemble
+            every machine you buy.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/shop">

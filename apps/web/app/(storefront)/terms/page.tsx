@@ -4,7 +4,7 @@ import { PageHero } from '@/components/storefront/PageHero';
 export const metadata: Metadata = {
   title: 'Terms of service',
   description:
-    'Terms of service for birmingham-av.com: ordering, pricing, warranty, returns, liability, and governing law for Birmingham AV Ltd. refurbished PC sales.',
+    'Terms of service for birmingham-av.com: ordering, pricing, warranty, returns, liability, and governing law for Birmingham AV Ltd. PC sales, new and refurbished.',
 };
 
 export default function TermsPage() {

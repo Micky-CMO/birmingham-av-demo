@@ -34,6 +34,28 @@ body {
   overflow-x: hidden;
 }
 
+/* Kill blue flash on tap for touch devices; our own :active / hover styling
+   handles feedback where appropriate. */
+a,
+button,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Stop iOS Safari from inflating form text. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: inherit;
+  }
+}
+
 /* Keep the native OS cursor visible everywhere. The custom CursorFollower is a
    decorative spotlight, not a replacement — so the user can always see where
    they are about to click. */

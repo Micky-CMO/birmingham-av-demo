@@ -37,13 +37,13 @@ export function CartDrawer() {
             onClick={(e) => e.stopPropagation()}
             className="ml-auto flex h-full w-full max-w-[480px] flex-col border-l border-ink-300/60 bg-white shadow-glass-light dark:border-obsidian-500/60 dark:bg-obsidian-900 dark:shadow-glass-dark"
           >
-            <header className="flex items-center justify-between border-b border-ink-300/60 px-6 py-4 dark:border-obsidian-500/60">
+            <header className="flex items-center justify-between border-b border-ink-300/60 px-4 py-3 sm:px-6 sm:py-4 dark:border-obsidian-500/60">
               <h2 className="text-h3 font-display">Your cart</h2>
               <button
                 type="button"
                 aria-label="Close cart"
                 onClick={() => setOpen(false)}
-                className="text-ink-500 hover:text-ink-900 dark:hover:text-ink-50"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-xl text-ink-500 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-obsidian-800 dark:hover:text-ink-50"
               >
                 &times;
               </button>
@@ -58,7 +58,7 @@ export function CartDrawer() {
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
                   <ul className="space-y-4">
                     {lines.map((l) => (
                       <li key={l.productId} className="flex gap-3">
@@ -74,18 +74,18 @@ export function CartDrawer() {
                             <div className="inline-flex items-center overflow-hidden rounded-md border border-ink-300/60 dark:border-obsidian-500/60">
                               <button
                                 type="button"
-                                aria-label="decrease"
+                                aria-label="Decrease quantity"
                                 onClick={() => update(l.productId, l.qty - 1)}
-                                className="h-8 w-8 text-ink-700 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
+                                className="h-10 w-10 text-ink-700 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
                               >
                                 &minus;
                               </button>
-                              <span className="w-8 text-center font-mono text-small">{l.qty}</span>
+                              <span className="w-9 text-center font-mono text-small">{l.qty}</span>
                               <button
                                 type="button"
-                                aria-label="increase"
+                                aria-label="Increase quantity"
                                 onClick={() => update(l.productId, l.qty + 1)}
-                                className="h-8 w-8 text-ink-700 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
+                                className="h-10 w-10 text-ink-700 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
                               >
                                 +
                               </button>
@@ -93,7 +93,7 @@ export function CartDrawer() {
                             <button
                               type="button"
                               onClick={() => remove(l.productId)}
-                              className="text-caption text-ink-500 hover:text-semantic-critical"
+                              className="inline-flex min-h-11 items-center px-2 text-caption text-ink-500 hover:text-semantic-critical"
                             >
                               Remove
                             </button>
@@ -103,13 +103,16 @@ export function CartDrawer() {
                     ))}
                   </ul>
                 </div>
-                <footer className="border-t border-ink-300/60 px-6 py-4 dark:border-obsidian-500/60">
+                <footer
+                  className="border-t border-ink-300/60 px-4 py-4 sm:px-6 dark:border-obsidian-500/60"
+                  style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+                >
                   <div className="mb-4 flex items-center justify-between">
                     <span className="text-small text-ink-500">Subtotal</span>
                     <span className="text-h3 font-display">{formatGbp(subtotal)}</span>
                   </div>
-                  <Link href="/checkout" onClick={() => setOpen(false)}>
-                    <Button size="lg" className="w-full">
+                  <Link href="/checkout" onClick={() => setOpen(false)} className="block">
+                    <Button size="lg" className="h-12 w-full">
                       Checkout
                     </Button>
                   </Link>
