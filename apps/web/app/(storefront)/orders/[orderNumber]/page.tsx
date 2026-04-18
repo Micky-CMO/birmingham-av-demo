@@ -1,9 +1,22 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { Badge, GlassCard } from '@/components/ui';
 import { formatGbp } from '@bav/lib';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { orderNumber: string };
+}): Promise<Metadata> {
+  return {
+    title: `Order ${params.orderNumber}`,
+    description: `Track your Birmingham AV order ${params.orderNumber}: build status, shipping, invoice, and assigned builder.`.slice(0, 159),
+    robots: { index: false, follow: false },
+  };
+}
 
 const STATUS_STEPS = [
   { key: 'paid', label: 'Paid' },

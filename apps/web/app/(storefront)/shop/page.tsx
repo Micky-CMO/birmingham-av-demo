@@ -1,10 +1,15 @@
+import type { Metadata } from 'next';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { FilterPanel } from '@/components/storefront/FilterPanel';
 import { listProducts } from '@/lib/services/products';
 import { getFilterAggregates } from '@/lib/services/filters';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
 
-export const metadata = { title: 'Shop' };
+export const metadata: Metadata = {
+  title: 'Shop refurbished PCs',
+  description:
+    'Shop every Birmingham AV refurbished PC: filter by CPU, GPU, RAM, price, builder, and condition grade. Each unit tested, warrantied, and built in Birmingham.',
+};
 export const dynamic = 'force-dynamic';
 
 export default async function ShopPage({

@@ -13,17 +13,17 @@ const PHRASES = [
 
 export function MarqueeTape() {
   const content = (
-    <div className="flex shrink-0 items-center gap-12 pr-12">
+    <div className="flex shrink-0 items-center gap-6 pr-6 sm:gap-12 sm:pr-12">
       {PHRASES.map((p) => (
-        <span key={p} className="flex items-center gap-12 whitespace-nowrap font-display text-[clamp(1.5rem,4vw,3rem)] font-semibold uppercase tracking-[-0.02em]">
+        <span key={p} className="flex items-center gap-6 whitespace-nowrap font-display text-[clamp(1.25rem,4vw,3rem)] font-semibold uppercase tracking-[-0.02em] sm:gap-12">
           {p}
-          <span aria-hidden className="h-2.5 w-2.5 rotate-45 bg-brand-green" />
+          <span aria-hidden className="h-2 w-2 rotate-45 bg-brand-green sm:h-2.5 sm:w-2.5" />
         </span>
       ))}
     </div>
   );
   return (
-    <div className="relative overflow-hidden border-y border-ink-900/80 bg-ink-900 py-6 text-ink-50 dark:border-ink-50/10 dark:bg-obsidian-950">
+    <div className="relative w-full overflow-hidden border-y border-ink-900/80 bg-ink-900 py-5 text-ink-50 sm:py-6 dark:border-ink-50/10 dark:bg-obsidian-950">
       <motion.div
         className="flex"
         animate={{ x: ['0%', '-50%'] }}

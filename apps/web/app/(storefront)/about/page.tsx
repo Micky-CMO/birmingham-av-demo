@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/storefront/PageHero';
 import { GlassCard, Button } from '@/components/ui';
 
-export const metadata = { title: 'About' };
+export const metadata: Metadata = {
+  title: 'About',
+  description:
+    'Birmingham AV is a Bromsgrove refurbished-PC workshop: 22 in-house builders, seven-stage QC, and 82,000 units shipped since 2020.',
+};
 
 export default function AboutPage() {
   return (

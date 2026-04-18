@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { HeroVideo } from '@/components/storefront/HeroVideo';
 import { StatsRail } from '@/components/storefront/StatsRail';
 import { MarqueeTape } from '@/components/storefront/MarqueeTape';
@@ -9,6 +10,12 @@ import { ScrollReveal } from '@/components/fx/ScrollReveal';
 import { listProducts } from '@/lib/services/products';
 import { getSpotlightBuilder } from '@/lib/services/builders';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
+
+export const metadata: Metadata = {
+  title: 'Refurbished PCs built in Birmingham',
+  description:
+    'Refurbished gaming and workstation PCs, assembled and tested by named builders in Birmingham. 12-month warranty, free UK next-day delivery over £50.',
+};
 
 export const dynamic = 'force-dynamic';
 

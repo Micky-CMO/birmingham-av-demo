@@ -14,25 +14,28 @@ const CATEGORIES: Array<{ slug: string; label: string; subtitle: string; count: 
 
 export function CategoryGrid() {
   return (
-    <section className="mx-auto max-w-7xl px-6 py-24">
-      <div className="flex items-end justify-between">
+    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-500">The catalog</p>
           <h2 className="mt-2 max-w-2xl font-display text-[clamp(2rem,4vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em]">
             Shop by what you need.
           </h2>
         </div>
-        <Link href="/shop" className="text-small font-medium text-brand-green hover:underline">
+        <Link
+          href="/shop"
+          className="inline-flex min-h-11 items-center text-small font-medium text-brand-green hover:underline"
+        >
           All products &rarr;
         </Link>
       </div>
 
-      <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="mt-10 grid grid-cols-2 gap-3 sm:mt-12 sm:gap-4 md:grid-cols-3">
         {CATEGORIES.map((c, i) => (
           <ScrollReveal key={c.slug} delay={i * 0.06}>
             <Link href={`/shop/${c.slug}`} className="block">
               <SpotlightCard className="rounded-lg">
-                <GlassCard className="relative aspect-[4/3] overflow-hidden p-6">
+                <GlassCard className="relative aspect-[4/3] overflow-hidden p-4 sm:p-6">
                   <div className="flex h-full flex-col justify-between">
                     <div className="flex items-start justify-between">
                       <span className="font-mono text-caption uppercase tracking-widest text-ink-500">{c.subtitle}</span>

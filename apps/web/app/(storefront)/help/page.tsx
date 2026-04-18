@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/storefront/PageHero';
 import { GlassCard, Button } from '@/components/ui';
 
-export const metadata = { title: 'Help centre' };
+export const metadata: Metadata = {
+  title: 'Help centre',
+  description:
+    'Birmingham AV help centre: answers on refurbished PC delivery, returns, warranty, upgrades, payment methods, and builder assignment.',
+};
 
 const FAQS = [
   {

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -5,9 +6,23 @@ import { Badge, GlassCard } from '@/components/ui';
 import { prisma } from '@/lib/db';
 import { PageHero } from '@/components/storefront/PageHero';
 import { ProductCard } from '@/components/storefront/ProductCard';
-import { formatGbp } from '@bav/lib';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
+  const b = await prisma.builder.findUnique({ where: { builderCode: params.code.toUpperCase() } });
+  if (!b) {
+    return {
+      title: 'Builder not found',
+      description: 'This Birmingham AV builder profile is no longer available.',
+    };
+  }
+  const quality = Number(b.qualityScore).toFixed(2);
+  return {
+    title: `${b.displayName} · ${b.builderCode}`,
+    description: `${b.displayName} (${b.builderCode}) is a ${b.tier} Birmingham AV PC builder with ${b.totalUnitsBuilt.toLocaleString('en-GB')} builds and a ${quality} quality score.`.slice(0, 159),
+  };
+}
 
 export default async function BuilderProfile({ params }: { params: { code: string } }) {
   const b = await prisma.builder.findUnique({
@@ -16,11 +31,22 @@ export default async function BuilderProfile({ params }: { params: { code: strin
   });
   if (!b) notFound();
 
+  // Active catalogue listings for the "Current builds" grid.
   const products = await prisma.product.findMany({
     where: { builderId: b.builderId, isActive: true },
     orderBy: { createdAt: 'desc' },
     take: 8,
     include: { inventory: true },
+  });
+
+  // Physical units this builder has assembled recently, joined through to the product.
+  // We order by buildCompletedAt (falling back to createdAt for units still mid-assembly)
+  // to show what the bench has actually shipped lately.
+  const recentUnits = await prisma.unit.findMany({
+    where: { builderId: b.builderId },
+    orderBy: [{ buildCompletedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
+    take: 8,
+    include: { product: { include: { inventory: true } } },
   });
 
   return (
@@ -68,7 +94,32 @@ export default async function BuilderProfile({ params }: { params: { code: strin
         }
       />
 
-      <section className="mx-auto max-w-7xl px-6 pb-24">
+      {/* Builder signature — bio as a pull quote */}
+      {b.bio && (
+        <section className="mx-auto max-w-7xl px-6 pb-12">
+          <GlassCard className="relative overflow-hidden p-10 md:p-14">
+            <span
+              aria-hidden
+              className="absolute -left-2 -top-6 select-none font-display text-[8rem] leading-none text-brand-green/10 md:text-[10rem]"
+            >
+              &ldquo;
+            </span>
+            <p className="mb-3 font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Builder signature</p>
+            <blockquote className="font-display text-[clamp(1.5rem,3.2vw,2.5rem)] font-semibold leading-[1.15] tracking-[-0.02em]">
+              {b.bio}
+            </blockquote>
+            <footer className="mt-6 flex items-center gap-3 font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
+              <span aria-hidden className="h-px w-10 bg-brand-green" />
+              <span>
+                {b.displayName} · {b.builderCode}
+              </span>
+            </footer>
+          </GlassCard>
+        </section>
+      )}
+
+      {/* Current listings */}
+      <section className="mx-auto max-w-7xl px-6 pb-16">
         <div className="mb-8 flex items-end justify-between">
           <h2 className="font-display text-h2 font-semibold tracking-[-0.02em]">Current builds</h2>
           <Link href="/shop" className="text-small font-medium text-brand-green hover:underline">
@@ -99,6 +150,99 @@ export default async function BuilderProfile({ params }: { params: { code: strin
             ))}
           </div>
         )}
+      </section>
+
+      {/* Recent builds strip — real units shipped by this builder */}
+      {recentUnits.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 pb-16">
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <p className="font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Off the bench</p>
+              <h2 className="mt-2 font-display text-h2 font-semibold tracking-[-0.02em]">Recent builds</h2>
+            </div>
+            <p className="font-mono text-caption text-ink-500">
+              Last {recentUnits.length} unit{recentUnits.length === 1 ? '' : 's'}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {recentUnits.map((u) => (
+              <ProductCard
+                key={u.unitId}
+                product={{
+                  productId: u.product.productId,
+                  slug: u.product.slug,
+                  title: u.product.title,
+                  specLine: null,
+                  conditionGrade: u.product.conditionGrade,
+                  priceGbp: Number(u.product.priceGbp),
+                  compareAtGbp: u.product.compareAtGbp ? Number(u.product.compareAtGbp) : null,
+                  imageUrl: null,
+                  inStock: (u.product.inventory?.stockQty ?? 0) > 0,
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* How to book this specific builder */}
+      <section className="mx-auto max-w-7xl px-6 pb-24">
+        <div className="mb-8">
+          <p className="font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Book the chair</p>
+          <h2 className="mt-2 font-display text-h2 font-semibold tracking-[-0.02em]">
+            How to book {b.displayName}
+          </h2>
+          <p className="mt-2 max-w-2xl text-small text-ink-500">
+            Pick this builder at checkout just like you pick your barber. Same name on the order, same name on the
+            warranty card.
+          </p>
+        </div>
+        <ol className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[
+            {
+              n: '01',
+              title: 'Add a build to your basket',
+              body: (
+                <>
+                  Choose any PC from <Link href="/shop" className="text-brand-green hover:underline">the shop</Link>{' '}
+                  or one of {b.displayName}&apos;s current builds above. If it&apos;s already listed under this
+                  builder, you&apos;re set.
+                </>
+              ),
+            },
+            {
+              n: '02',
+              title: 'Request this builder at checkout',
+              body: (
+                <>
+                  On the checkout page, open &ldquo;Builder preference&rdquo; and pick{' '}
+                  <span className="font-mono text-ink-900 dark:text-ink-100">{b.builderCode}</span>. We&apos;ll route
+                  your order into their queue and lock the serial number to their bench.
+                </>
+              ),
+            },
+            {
+              n: '03',
+              title: 'Track it from queue to QC',
+              body: (
+                <>
+                  Watch the wait tick down in your dashboard. You&apos;ll get a photo when the build starts, QC
+                  sign-off when it&apos;s boxed, and a dispatch ping the moment it leaves the warehouse.
+                </>
+              ),
+            },
+          ].map((step) => (
+            <li key={step.n}>
+              <GlassCard className="h-full p-6">
+                <div className="font-display text-[clamp(2rem,3vw,2.5rem)] font-semibold tracking-[-0.02em] text-brand-green">
+                  {step.n}
+                </div>
+                <h3 className="mt-2 font-display text-h3 font-semibold">{step.title}</h3>
+                <p className="mt-3 text-small leading-relaxed text-ink-700 dark:text-ink-300">{step.body}</p>
+              </GlassCard>
+            </li>
+          ))}
+        </ol>
       </section>
     </>
   );

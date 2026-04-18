@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import { PageHero } from '@/components/storefront/PageHero';
 import { GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Shipping' };
+export const metadata: Metadata = {
+  title: 'Shipping',
+  description:
+    'Birmingham AV shipping: free UK next-day delivery on orders over £50, Saturday and Express options, EU and international rates, all insured and tracked.',
+};
 
 export default function ShippingPage() {
   return (

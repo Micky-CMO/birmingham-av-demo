@@ -9,7 +9,21 @@ type Point = { date: string; revenue: number; orders: number };
 
 export function RevenueChart({ data }: { data: Point[] }) {
   const [hover, setHover] = useState<number | null>(null);
-  if (data.length === 0) return null;
+
+  if (data.length === 0) {
+    return (
+      <GlassCard className="p-6">
+        <header>
+          <p className="font-mono text-caption uppercase tracking-widest text-ink-500">Revenue · 30 days</p>
+          <h3 className="mt-1 font-display text-h2 font-semibold tabular-nums">{formatGbp(0)}</h3>
+          <p className="mt-1 text-caption text-ink-500">0 orders</p>
+        </header>
+        <div className="mt-6 flex h-[240px] items-center justify-center text-small text-ink-500">
+          No revenue data yet.
+        </div>
+      </GlassCard>
+    );
+  }
 
   const maxRev = Math.max(...data.map((d) => d.revenue), 1);
   const total = data.reduce((s, d) => s + d.revenue, 0);
@@ -20,18 +34,22 @@ export function RevenueChart({ data }: { data: Point[] }) {
   const pad = { top: 16, right: 16, bottom: 28, left: 16 };
   const innerW = W - pad.left - pad.right;
   const innerH = H - pad.top - pad.bottom;
-  const stepX = data.length === 1 ? innerW : innerW / (data.length - 1);
+  const singlePoint = data.length === 1;
+  const stepX = singlePoint ? innerW : innerW / (data.length - 1);
 
   const points = data.map((d, i) => ({
-    x: pad.left + i * stepX,
+    // Centre the lone point on single-data-point runs so the crosshair sits in the middle of the chart.
+    x: singlePoint ? pad.left + innerW / 2 : pad.left + i * stepX,
     y: pad.top + innerH - (d.revenue / maxRev) * innerH,
     d,
     i,
   }));
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const linePath = singlePoint
+    ? `M${points[0]!.x.toFixed(1)} ${points[0]!.y.toFixed(1)} L${points[0]!.x.toFixed(1)} ${points[0]!.y.toFixed(1)}`
+    : points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   const areaPath = `${linePath} L ${points[points.length - 1]!.x} ${pad.top + innerH} L ${points[0]!.x} ${pad.top + innerH} Z`;
 
-  const hoveredPoint = hover !== null ? points[hover] : null;
+  const hoveredPoint = hover !== null ? points[hover] ?? null : null;
 
   return (
     <GlassCard className="p-6">
@@ -88,19 +106,28 @@ export function RevenueChart({ data }: { data: Point[] }) {
             transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
           />
 
-          {/* Hover hit-areas */}
-          {points.map((p) => (
-            <rect
-              key={p.i}
-              x={p.x - stepX / 2}
-              y={pad.top}
-              width={stepX}
-              height={innerH}
-              fill="transparent"
-              onMouseEnter={() => setHover(p.i)}
-              onMouseLeave={() => setHover(null)}
-            />
-          ))}
+          {/* Always render a dot for the lone point so it's visibly represented. */}
+          {singlePoint && (
+            <circle cx={points[0]!.x} cy={points[0]!.y} r="4" fill="#1EB53A" />
+          )}
+
+          {/* Hover hit-areas. Clamp to viewBox so the lone-point rect stays interactive. */}
+          {points.map((p) => {
+            const rectX = Math.max(pad.left, p.x - stepX / 2);
+            const rectW = Math.min(stepX, W - pad.right - rectX);
+            return (
+              <rect
+                key={p.i}
+                x={rectX}
+                y={pad.top}
+                width={rectW}
+                height={innerH}
+                fill="transparent"
+                onMouseEnter={() => setHover(p.i)}
+                onMouseLeave={() => setHover(null)}
+              />
+            );
+          })}
 
           {hoveredPoint && (
             <>

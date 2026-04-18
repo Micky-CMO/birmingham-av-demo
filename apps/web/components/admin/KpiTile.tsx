@@ -45,11 +45,17 @@ export function KpiTile({ label, value, deltaPct, spark, tone = 'default', hint 
 }
 
 function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const range = max - min || 1;
   const w = 100;
   const h = 28;
+  if (values.length < 2) return null;
+  const rawMax = Math.max(...values);
+  const rawMin = Math.min(...values);
+  // When all values are identical, force a non-zero range so we don't divide by zero
+  // and the line renders flat across the middle of the sparkline.
+  const sameValues = rawMax === rawMin;
+  const max = sameValues ? rawMax + 1 : rawMax;
+  const min = sameValues ? rawMin - 1 : rawMin;
+  const range = Math.max(max - min, 1);
   const step = w / (values.length - 1);
   const points = values
     .map((v, i) => `${(i * step).toFixed(2)},${(h - ((v - min) / range) * h).toFixed(2)}`)

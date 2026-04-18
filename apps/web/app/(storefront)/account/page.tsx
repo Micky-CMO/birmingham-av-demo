@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button, GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Account' };
+export const metadata: Metadata = {
+  title: 'Your account',
+  description:
+    'Sign in to your Birmingham AV account to track orders, manage returns, update addresses, and set notification preferences.',
+};
 
 export default function AccountPage() {
   return (

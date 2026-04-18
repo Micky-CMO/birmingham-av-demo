@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Logo } from '@/components/brand/Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { PWAInstallChip } from '@/components/fx/PWAInstaller';
@@ -21,6 +21,7 @@ const NAV = [
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const cartCount = useCartStore((s) => s.count());
   const setCartOpen = useUiStore((s) => s.setCartOpen);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
@@ -30,6 +31,29 @@ export function Header() {
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Lock scroll when mobile menu is open.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (mobileOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [mobileOpen]);
+
+  // Close mobile menu on viewport resize into desktop.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setMobileOpen(false);
+    };
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
   }, []);
 
   return (
@@ -44,7 +68,7 @@ export function Header() {
           : 'border-transparent bg-gradient-to-b from-ink-50/60 to-transparent dark:from-obsidian-950/40',
       )}
     >
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-6 px-6">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:gap-6 sm:px-6">
         <Logo priority />
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -53,12 +77,12 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             type="button"
             aria-label="Search"
             onClick={() => setSearchOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800"
           >
             <SearchIcon />
           </button>
@@ -67,7 +91,7 @@ export function Header() {
           <Link
             href="/account"
             aria-label="Account"
-            className="hidden h-9 w-9 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800 sm:flex"
+            className="hidden h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800 sm:flex"
           >
             <UserIcon />
           </Link>
@@ -75,7 +99,7 @@ export function Header() {
             type="button"
             aria-label="Cart"
             onClick={() => setCartOpen(true)}
-            className="relative flex h-9 items-center gap-2 rounded-md bg-ink-100 px-3 text-small font-medium text-ink-900 transition-all hover:bg-ink-300/60 dark:bg-obsidian-800 dark:text-ink-50 dark:hover:bg-obsidian-700"
+            className="relative flex h-11 min-w-11 items-center justify-center gap-2 rounded-md bg-ink-100 px-3 text-small font-medium text-ink-900 transition-all hover:bg-ink-300/60 dark:bg-obsidian-800 dark:text-ink-50 dark:hover:bg-obsidian-700"
           >
             <BagIcon />
             <span className="hidden sm:inline">Cart</span>
@@ -91,8 +115,64 @@ export function Header() {
               </motion.span>
             )}
           </button>
+          <button
+            type="button"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex h-11 w-11 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-obsidian-800 md:hidden"
+          >
+            {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
         </div>
       </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            id="mobile-nav"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 top-[72px] z-40 flex flex-col bg-white/95 backdrop-blur-glass dark:bg-obsidian-950/95 md:hidden"
+          >
+            <nav className="flex flex-col gap-1 px-4 py-6">
+              {NAV.map((item, i) => (
+                <motion.div
+                  key={item.href + item.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex min-h-11 items-center rounded-md px-4 py-3 text-lg font-medium text-ink-900 transition-colors hover:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: NAV.length * 0.04, duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-2 border-t border-ink-300/60 pt-2 dark:border-obsidian-500/60"
+              >
+                <Link
+                  href="/account"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex min-h-11 items-center rounded-md px-4 py-3 text-lg font-medium text-ink-900 transition-colors hover:bg-ink-100 dark:text-ink-50 dark:hover:bg-obsidian-800"
+                >
+                  Account
+                </Link>
+              </motion.div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 }
@@ -133,6 +213,20 @@ function BagIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M6 7h12l-1 13H7L6 7Z" strokeLinejoin="round" />
       <path d="M9 7a3 3 0 1 1 6 0" strokeLinecap="round" />
+    </svg>
+  );
+}
+function MenuIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   );
 }

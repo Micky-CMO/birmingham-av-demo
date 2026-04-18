@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import { PageHero } from '@/components/storefront/PageHero';
 import { GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Cookies' };
+export const metadata: Metadata = {
+  title: 'Cookie policy',
+  description:
+    'Cookie policy for Birmingham AV: essential session, cart, and theme cookies we use, what they do, and how long they last.',
+};
 
 export default function CookiesPage() {
   return (

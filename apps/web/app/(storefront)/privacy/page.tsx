@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { PageHero } from '@/components/storefront/PageHero';
 
-export const metadata = { title: 'Privacy' };
+export const metadata: Metadata = {
+  title: 'Privacy policy',
+  description:
+    'Birmingham AV privacy policy: what personal data we collect, why we collect it, how long we keep it, and how to exercise your data rights.',
+};
 
 export default function PrivacyPage() {
   return (

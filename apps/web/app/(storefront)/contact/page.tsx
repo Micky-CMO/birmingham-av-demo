@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import { PageHero } from '@/components/storefront/PageHero';
 import { Button, GlassCard, Input } from '@/components/ui';
 
-export const metadata = { title: 'Contact' };
+export const metadata: Metadata = {
+  title: 'Contact',
+  description:
+    'Contact Birmingham AV support, trade, and press teams. UK working-hours replies within two hours, plus our registered office address.',
+};
 
 export default function ContactPage() {
   return (

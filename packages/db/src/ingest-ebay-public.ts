@@ -63,13 +63,45 @@ const COOKIE_JAR = path.resolve(process.cwd(), '.ebay-cookies.txt');
 let jarWarmedAt = 0;
 const JAR_TTL = 45 * 60 * 1000; // 45 min
 
+// Safe-resume guard: if eBay starts throttling/fingerprinting us, the cookie-jar
+// warm step returns quickly but produces no usable cookies (next fetchHtml
+// then sees a short/splash response). After N consecutive warm attempts that
+// yield no usable jar, bail out cleanly instead of hammering their edge.
+let jarWarmFailStreak = 0;
+const JAR_WARM_MAX_FAILS = 3;
+class EbayThrottledError extends Error {
+  constructor() {
+    super('eBay throttling us, try again in 15 min');
+    this.name = 'EbayThrottledError';
+  }
+}
+
 async function warmCookieJar(): Promise<void> {
   const { exec } = await import('node:child_process');
   const { promisify } = await import('node:util');
+  const { stat } = await import('node:fs/promises');
   const execP = promisify(exec);
   const cmd = `curl -s -L -c '${COOKIE_JAR}' -A '${UA}' -H 'Accept-Language: en-GB,en;q=0.9' 'https://www.ebay.co.uk/' -o /dev/null --max-time 20 && curl -s -L -c '${COOKIE_JAR}' -b '${COOKIE_JAR}' -A '${UA}' -H 'Accept-Language: en-GB,en;q=0.9' 'https://www.ebay.co.uk/str/${SELLER}' -o /dev/null --max-time 25`;
-  await execP(`bash -c "${cmd.replace(/"/g, '\\"')}"`).catch(() => undefined);
+  let warmOk = false;
+  try {
+    await execP(`bash -c "${cmd.replace(/"/g, '\\"')}"`);
+    // Consider the warm a success only if the jar file actually grew beyond a
+    // trivial size - curl can exit 0 with an empty/near-empty jar when eBay
+    // serves the splash gate without setting session cookies.
+    const s = await stat(COOKIE_JAR).catch(() => null);
+    warmOk = !!s && s.size > 512;
+  } catch {
+    warmOk = false;
+  }
   jarWarmedAt = Date.now();
+  if (warmOk) {
+    jarWarmFailStreak = 0;
+  } else {
+    jarWarmFailStreak += 1;
+    if (jarWarmFailStreak >= JAR_WARM_MAX_FAILS) {
+      throw new EbayThrottledError();
+    }
+  }
 }
 
 async function fetchHtml(url: string, attempt = 1): Promise<string> {
@@ -96,6 +128,8 @@ async function fetchHtml(url: string, attempt = 1): Promise<string> {
     }
     return stdout;
   } catch (err) {
+    // Throttle signal - don't swallow, propagate so main() can abort cleanly.
+    if (err instanceof EbayThrottledError) throw err;
     if (attempt >= 4) throw err;
     await sleep(2 ** attempt * 800);
     return fetchHtml(url, attempt + 1);
@@ -225,6 +259,7 @@ async function main() {
   const allCards: Card[] = [];
   const failures: Array<{ context: string; error: string }> = [];
 
+  let throttled = false;
   for (let page = 1; page <= maxPages; page += 1) {
     const url = `${STORE_BASE}?_pgn=${page}`;
     process.stdout.write(`  page ${page}/${maxPages} ... `);
@@ -238,10 +273,21 @@ async function main() {
       }
       allCards.push(...cards);
     } catch (err) {
+      if (err instanceof EbayThrottledError) {
+        console.log('ABORT');
+        console.log(`==> ${err.message}`);
+        failures.push({ context: `page ${page}`, error: err.message });
+        throttled = true;
+        break;
+      }
       console.log('failed:', String(err));
       failures.push({ context: `page ${page}`, error: String(err) });
     }
-    await sleep(1200);
+    await sleep(2200);
+  }
+
+  if (throttled && allCards.length === 0) {
+    console.log('==> No cards collected before throttle - skipping DB writes.');
   }
 
   console.log(`==> Collected ${allCards.length} cards`);
@@ -256,6 +302,12 @@ async function main() {
         const html = await fetchHtml(c.itemUrl);
         Object.assign(c, parseItemPage(html));
       } catch (err) {
+        if (err instanceof EbayThrottledError) {
+          console.log(`\n==> ${err.message} (stopping detail fetch, continuing with cards already collected)`);
+          failures.push({ context: `detail ${c.ebayItemId}`, error: err.message });
+          // Stop fetching details but keep upserting what we already have.
+          break;
+        }
         failures.push({ context: `detail ${c.ebayItemId}`, error: String(err) });
       }
       await sleep(1100);
@@ -337,7 +389,21 @@ async function main() {
 
       upserted += 1;
     } catch (err) {
-      failures.push({ context: `upsert ${c.ebayItemId}`, error: String(err) });
+      // Narrow error to a useful one-liner - strip multiline Prisma stack noise
+      // so a single failure surfaces clearly without drowning the output.
+      const msg = err instanceof Error ? err.message : String(err);
+      const firstLine = msg.split('\n').find((l) => l.trim().length > 0)?.trim() ?? msg;
+      const code = (err as { code?: string })?.code;
+      const tag = code ? `[${code}] ` : '';
+      console.log(`  upsert failed (${c.ebayItemId}): ${tag}${firstLine}`);
+      failures.push({ context: `upsert ${c.ebayItemId}`, error: `${tag}${firstLine}` });
+      // Continue - do not let one bad row abort the remaining writes.
+      continue;
+    }
+
+    // Progress output every 10 upserts so we can see DB write progress.
+    if ((i + 1) % 10 === 0) {
+      console.log(`  upserted ${i + 1}/${allCards.length}`);
     }
   }
 
@@ -368,7 +434,11 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error(err);
+    if (err instanceof EbayThrottledError) {
+      console.error(`==> ${err.message}`);
+    } else {
+      console.error(err);
+    }
     process.exitCode = 1;
   })
   .finally(async () => {

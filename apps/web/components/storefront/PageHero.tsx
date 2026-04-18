@@ -12,7 +12,7 @@ export function PageHero({
   right?: ReactNode;
 }) {
   return (
-    <header className="relative mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-12 pt-24 md:grid-cols-12 md:pb-20 md:pt-32">
+    <header className="relative mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 pb-10 pt-16 sm:gap-12 sm:px-6 sm:pb-12 sm:pt-24 md:grid-cols-12 md:pb-20 md:pt-32">
       <div className="md:col-span-8">
         {eyebrow && (
           <div className="mb-6 flex items-center gap-3 font-mono text-caption uppercase tracking-[0.3em] text-ink-500">

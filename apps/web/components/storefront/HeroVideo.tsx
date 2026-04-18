@@ -24,7 +24,7 @@ export function HeroVideo() {
       <AmbientBeams />
 
       {/* ============ VIDEO PLATE ============ */}
-      <div className="relative h-[78vh] min-h-[560px] w-full overflow-hidden">
+      <div className="relative h-[82vh] min-h-[480px] w-full overflow-hidden sm:h-[78vh] sm:min-h-[560px]">
         <motion.div style={{ y: videoY, scale: videoScale, opacity: videoOpacity }} className="absolute inset-0">
           <video
             autoPlay
@@ -64,10 +64,11 @@ export function HeroVideo() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute left-1/2 top-8 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-white/60 px-4 py-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-900 backdrop-blur-glass dark:border-white/10 dark:bg-obsidian-900/60 dark:text-ink-50"
+          className="absolute left-1/2 top-6 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-white/60 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-900 backdrop-blur-glass dark:border-white/10 dark:bg-obsidian-900/60 dark:text-ink-50 sm:top-8 sm:px-4 sm:py-2 sm:text-caption sm:tracking-[0.2em]"
         >
           <span className="inline-block h-1.5 w-1.5 animate-pulse-green rounded-full bg-brand-green" />
-          Since 2020 · Hand-built in Birmingham
+          <span className="sm:hidden">Since 2020 · B'ham built</span>
+          <span className="hidden sm:inline">Since 2020 · Hand-built in Birmingham</span>
         </motion.div>
 
         {/* Corner metadata (cinema style) */}
@@ -107,7 +108,7 @@ export function HeroVideo() {
       </div>
 
       {/* ============ EDITORIAL BAND ============ */}
-      <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-6 md:pb-32 md:pt-12">
+      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-6 sm:px-6 md:pb-32 md:pt-12">
         {/* Eyebrow */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -138,17 +139,17 @@ export function HeroVideo() {
             transition={{ delay: 1.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-start gap-4 md:col-span-7 md:items-end"
           >
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <MagneticButton strength={18}>
-                <Link href="/shop">
-                  <Button size="lg" className="px-9 text-base">
+                <Link href="/shop" className="block">
+                  <Button size="lg" className="w-full px-9 text-base sm:w-auto">
                     Shop all PCs
                   </Button>
                 </Link>
               </MagneticButton>
               <MagneticButton strength={18}>
-                <Link href="/shop/gaming-pc-bundles">
-                  <Button size="lg" variant="outline" className="px-9 text-base">
+                <Link href="/shop/gaming-pc-bundles" className="block">
+                  <Button size="lg" variant="outline" className="w-full px-9 text-base sm:w-auto">
                     Gaming bundles
                   </Button>
                 </Link>
@@ -162,7 +163,7 @@ export function HeroVideo() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.6, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-20 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-ink-300/50 bg-ink-300/50 md:grid-cols-4 dark:border-obsidian-500/40 dark:bg-obsidian-500/30"
+          className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-ink-300/50 bg-ink-300/50 md:mt-20 md:grid-cols-4 dark:border-obsidian-500/40 dark:bg-obsidian-500/30"
         >
           {[
             { k: 'Units sold', v: '82K', sub: 'lifetime on eBay' },
@@ -172,7 +173,7 @@ export function HeroVideo() {
           ].map((s) => (
             <div
               key={s.k}
-              className="group relative flex flex-col gap-1 bg-ink-50 p-6 transition-colors hover:bg-white dark:bg-obsidian-950 dark:hover:bg-obsidian-900"
+              className="group relative flex flex-col gap-1 bg-ink-50 p-4 transition-colors hover:bg-white sm:p-6 dark:bg-obsidian-950 dark:hover:bg-obsidian-900"
             >
               <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">{s.k}</span>
               <span className="font-display text-[clamp(2rem,3.2vw,2.75rem)] font-semibold leading-none tracking-[-0.02em]">

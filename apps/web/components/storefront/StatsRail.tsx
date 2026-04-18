@@ -13,10 +13,10 @@ const STATS: Array<{ label: string; value: number; format?: (n: number) => strin
 export function StatsRail() {
   return (
     <section className="border-y border-ink-300/50 bg-white/40 backdrop-blur-sm dark:border-obsidian-500/40 dark:bg-obsidian-900/40">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-ink-300/50 md:grid-cols-4 dark:divide-obsidian-500/40">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-ink-300/50 md:grid-cols-4 dark:bg-obsidian-500/40">
         {STATS.map((s, i) => (
           <ScrollReveal key={s.label} delay={i * 0.08}>
-            <div className="px-6 py-10 text-center md:py-14">
+            <div className="h-full bg-white/40 px-4 py-8 text-center backdrop-blur-sm sm:px-6 sm:py-10 md:py-14 dark:bg-obsidian-900/40">
               <div
                 className={`font-display text-[clamp(2.2rem,5vw,3.75rem)] font-semibold leading-none tracking-[-0.02em] ${
                   s.accent ? 'text-brand-green' : ''

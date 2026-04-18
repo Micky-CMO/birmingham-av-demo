@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/storefront/PageHero';
 import { Button, GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Careers' };
+export const metadata: Metadata = {
+  title: 'Careers',
+  description:
+    'Open roles at Birmingham AV: PC builder, QC technician, support lead, and warehouse logistics jobs across our Birmingham workshop hubs.',
+};
 
 const ROLES = [
   { title: 'PC Builder (Senior)', location: 'BHM-HUB-A · Full-time', summary: 'Assembly, burn-in, and QC sign-off. 3+ years workshop experience.' },

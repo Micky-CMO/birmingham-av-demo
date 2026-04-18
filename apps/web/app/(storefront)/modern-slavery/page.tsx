@@ -1,6 +1,11 @@
+import type { Metadata } from 'next';
 import { PageHero } from '@/components/storefront/PageHero';
 
-export const metadata = { title: 'Modern slavery statement' };
+export const metadata: Metadata = {
+  title: 'Modern slavery statement',
+  description:
+    'Birmingham AV Ltd. modern slavery statement under section 54 of the Modern Slavery Act 2015: our supply chain, due diligence, and reporting channel.',
+};
 
 export default function ModernSlaveryPage() {
   return (

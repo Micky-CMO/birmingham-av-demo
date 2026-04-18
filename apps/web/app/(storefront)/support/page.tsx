@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button, GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Support' };
+export const metadata: Metadata = {
+  title: 'Support',
+  description:
+    'Get support from Birmingham AV for order queries, returns, and warranty claims on your refurbished PC, with live chat and ticket options.',
+};
 
 export default function SupportPage() {
   return (

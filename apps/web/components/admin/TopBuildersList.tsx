@@ -16,6 +16,9 @@ export function TopBuildersList({ builders }: { builders: TopBuilder[] }) {
         )}
       </header>
       <ol className="flex-1 divide-y divide-ink-300/40 dark:divide-obsidian-500/30">
+        {builders.length === 0 && (
+          <li className="px-6 py-12 text-center text-small text-ink-500">No builder activity yet.</li>
+        )}
         {builders.map((b, i) => (
           <li key={b.builderCode} className="flex items-center gap-3 px-6 py-3">
             <span className="w-5 font-mono text-caption text-ink-500">{i + 1}</span>

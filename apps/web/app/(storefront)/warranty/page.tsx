@@ -1,8 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHero } from '@/components/storefront/PageHero';
 import { Button, GlassCard } from '@/components/ui';
 
-export const metadata = { title: 'Warranty' };
+export const metadata: Metadata = {
+  title: 'Warranty',
+  description:
+    'Every Birmingham AV refurbished PC ships with a 12-month parts and labour warranty. Extend to 24 months at checkout for a flat £29.',
+};
 
 export default function WarrantyPage() {
   return (

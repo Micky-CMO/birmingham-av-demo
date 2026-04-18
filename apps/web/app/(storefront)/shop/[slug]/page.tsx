@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { listProducts } from '@/lib/services/products';
@@ -5,6 +6,20 @@ import { prisma } from '@/lib/db';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const category = await prisma.productCategory.findUnique({ where: { slug: params.slug } });
+  if (!category) {
+    return {
+      title: 'Category not found',
+      description: 'This refurbished PC category is no longer available at Birmingham AV.',
+    };
+  }
+  return {
+    title: category.name,
+    description: `Shop refurbished ${category.name} from Birmingham AV: every unit tested on the bench, built by a named UK builder, and shipped with a 12-month warranty.`.slice(0, 159),
+  };
+}
 
 export default async function CategoryPage({
   params,

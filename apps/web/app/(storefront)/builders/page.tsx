@@ -1,10 +1,15 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PageHero } from '@/components/storefront/PageHero';
-import { Badge, GlassCard } from '@/components/ui';
+import { GlassCard } from '@/components/ui';
 import { prisma } from '@/lib/db';
 
-export const metadata = { title: 'Our builders' };
+export const metadata: Metadata = {
+  title: 'Our builders',
+  description:
+    'Meet the Birmingham AV builders: browse every bench technician by tier, quality score, workshop, and current wait time before you order your refurbished PC.',
+};
 export const dynamic = 'force-dynamic';
 
 const TIER_DOT: Record<'probation' | 'standard' | 'preferred' | 'elite', string> = {
@@ -20,7 +25,21 @@ const TIER_LABEL: Record<'probation' | 'standard' | 'preferred' | 'elite', strin
   elite: 'Elite',
 };
 
-export default async function BuildersPage() {
+type AvailabilityFilter = 'all' | 'available' | 'elite';
+
+function parseFilter(v: string | string[] | undefined): AvailabilityFilter {
+  const raw = Array.isArray(v) ? v[0] : v;
+  if (raw === 'available' || raw === 'elite') return raw;
+  return 'all';
+}
+
+export default async function BuildersPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const filter = parseFilter(searchParams?.filter);
+
   const builders = await prisma.builder.findMany({
     where: { status: 'active' },
     orderBy: [{ tier: 'desc' }, { qualityScore: 'desc' }],
@@ -30,11 +49,39 @@ export default async function BuildersPage() {
     },
   });
 
+  // Derive queue/wait data once, then filter in-memory (small table).
+  const enriched = builders.map((b) => {
+    const queueDepth = b._count.buildQueues;
+    const waitDays = queueDepth === 0 ? 0 : Math.max(1, Math.ceil((queueDepth * b.avgBuildMinutes) / (60 * 7)));
+    return { b, queueDepth, waitDays };
+  });
+
+  const visible = enriched.filter(({ b, waitDays }) => {
+    if (filter === 'available') return waitDays === 0;
+    if (filter === 'elite') return b.tier === 'elite';
+    return true;
+  });
+
+  // Top-rated builder across the whole active roster (not just the filtered view).
+  const topRatedId = enriched.reduce<{ id: string | null; score: number }>(
+    (acc, { b }) => {
+      const s = Number(b.qualityScore);
+      return s > acc.score ? { id: b.builderId, score: s } : acc;
+    },
+    { id: null, score: -Infinity },
+  ).id;
+
   const totals = {
     count: builders.length,
     units: builders.reduce((s, b) => s + b.totalUnitsBuilt, 0),
     avgQuality: builders.reduce((s, b) => s + Number(b.qualityScore), 0) / Math.max(1, builders.length),
   };
+
+  const chips: { key: AvailabilityFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'available', label: 'Available now' },
+    { key: 'elite', label: 'Elite only' },
+  ];
 
   return (
     <>
@@ -72,9 +119,30 @@ export default async function BuildersPage() {
         }
       />
 
-      {/* Tier legend */}
+      {/* Filter chips + tier legend */}
       <section className="mx-auto max-w-7xl px-6 pb-8">
-        <div className="flex flex-wrap items-center gap-4 font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter builders by availability">
+          {chips.map((c) => {
+            const active = c.key === filter;
+            const href = c.key === 'all' ? '/builders' : `/builders?filter=${c.key}`;
+            return (
+              <Link
+                key={c.key}
+                href={href}
+                aria-pressed={active}
+                className={`rounded-full border px-4 py-1.5 font-mono text-caption uppercase tracking-[0.15em] transition-colors duration-200 ${
+                  active
+                    ? 'border-brand-green bg-brand-green/10 text-brand-green'
+                    : 'border-ink-300/60 text-ink-500 hover:border-brand-green hover:text-brand-green dark:border-obsidian-500/60'
+                }`}
+              >
+                {c.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-4 font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
           <span>Tier legend:</span>
           {(['probation', 'standard', 'preferred', 'elite'] as const).map((t) => (
             <span key={t} className="flex items-center gap-2">
@@ -86,84 +154,118 @@ export default async function BuildersPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {builders.map((b) => {
-            const queueDepth = b._count.buildQueues;
-            const waitDays = queueDepth === 0 ? 0 : Math.max(1, Math.ceil((queueDepth * b.avgBuildMinutes) / (60 * 7)));
-            return (
-              <Link key={b.builderId} href={`/builders/${b.builderCode}`}>
-                <GlassCard className="group relative flex flex-col overflow-hidden p-6 transition-all duration-420 hover:-translate-y-0.5 hover:shadow-lift">
-                  <div className="flex items-start justify-between">
-                    <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
-                      {b.builderCode}
-                    </span>
-                    <span className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.15em] text-ink-500">
+        {builders.length === 0 ? (
+          <GlassCard className="p-12 text-center">
+            <p className="font-display text-h3 font-semibold">The bench is warming up.</p>
+            <p className="mt-2 text-small text-ink-500">
+              We haven&apos;t onboarded any builders yet. Check back soon — roster drops weekly.
+            </p>
+          </GlassCard>
+        ) : visible.length === 0 ? (
+          <GlassCard className="p-10 text-center text-small text-ink-500">
+            No builders match this filter right now.{' '}
+            <Link href="/builders" className="text-brand-green hover:underline">
+              Show all
+            </Link>
+          </GlassCard>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {visible.map(({ b, queueDepth, waitDays }) => {
+              const isTopRated = b.builderId === topRatedId;
+              return (
+                <Link key={b.builderId} href={`/builders/${b.builderCode}`}>
+                  <GlassCard
+                    className={`group relative flex flex-col overflow-hidden p-6 transition-all duration-420 hover:-translate-y-0.5 hover:shadow-lift ${
+                      isTopRated ? 'ring-1 ring-tier-elite/40' : ''
+                    }`}
+                  >
+                    {isTopRated && (
                       <span
-                        aria-hidden
-                        className={`inline-block h-1.5 w-1.5 rounded-full ${TIER_DOT[b.tier as keyof typeof TIER_DOT]}`}
-                      />
-                      {b.tier}
-                    </span>
-                  </div>
-
-                  <div className="mt-5 flex items-center gap-3">
-                    <div className="relative h-12 w-12 overflow-hidden rounded-full bg-ink-100 dark:bg-obsidian-800">
-                      {b.avatarUrl && <Image src={b.avatarUrl} alt={b.displayName} fill className="object-cover" />}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate font-display text-h3 font-semibold">{b.displayName}</div>
-                      <div className="truncate font-mono text-caption text-ink-500">{b.warehouseNode.nodeCode}</div>
-                    </div>
-                  </div>
-
-                  {/* Star rating visual */}
-                  <div className="mt-4 flex items-center gap-1">
-                    <StarRating score={Number(b.qualityScore)} />
-                    <span className="ml-1 font-mono text-caption text-ink-500">
-                      {Number(b.qualityScore).toFixed(2)}
-                    </span>
-                  </div>
-
-                  <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-ink-300/50 pt-4 font-mono text-caption dark:border-obsidian-500/40">
-                    <div>
-                      <dt className="text-ink-500">Builds</dt>
-                      <dd className="mt-0.5 tabular-nums">{b.totalUnitsBuilt.toLocaleString('en-GB')}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-ink-500">RMA</dt>
-                      <dd
-                        className={`mt-0.5 tabular-nums ${Number(b.rmaRateRolling90d) > 0.04 ? 'text-semantic-critical' : 'text-brand-green'}`}
+                        className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-tier-elite/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-tier-elite shadow-[0_0_10px_rgba(212,175,55,0.35)]"
+                        aria-label="Top rated builder"
                       >
-                        {(Number(b.rmaRateRolling90d) * 100).toFixed(1)}%
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-ink-500">Queue</dt>
-                      <dd className="mt-0.5 tabular-nums">{queueDepth}</dd>
-                    </div>
-                  </dl>
+                        <span
+                          aria-hidden
+                          className="inline-block h-1.5 w-1.5 rounded-full bg-tier-elite shadow-[0_0_6px_rgba(212,175,55,0.8)]"
+                        />
+                        Top rated
+                      </span>
+                    )}
 
-                  {/* Barber-shop wait indicator */}
-                  <div className="mt-4 flex items-center justify-between rounded-md bg-ink-100/60 px-3 py-2 dark:bg-obsidian-800/60">
-                    <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">Wait</span>
+                    <div className="flex items-start justify-between">
+                      <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
+                        {b.builderCode}
+                      </span>
+                      {!isTopRated && (
+                        <span className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.15em] text-ink-500">
+                          <span
+                            aria-hidden
+                            className={`inline-block h-1.5 w-1.5 rounded-full ${TIER_DOT[b.tier as keyof typeof TIER_DOT]}`}
+                          />
+                          {b.tier}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-3">
+                      <div className="relative h-12 w-12 overflow-hidden rounded-full bg-ink-100 dark:bg-obsidian-800">
+                        {b.avatarUrl && <Image src={b.avatarUrl} alt={b.displayName} fill className="object-cover" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-display text-h3 font-semibold">{b.displayName}</div>
+                        <div className="truncate font-mono text-caption text-ink-500">{b.warehouseNode.nodeCode}</div>
+                      </div>
+                    </div>
+
+                    {/* Star rating visual */}
+                    <div className="mt-4 flex items-center gap-1">
+                      <StarRating score={Number(b.qualityScore)} />
+                      <span className="ml-1 font-mono text-caption text-ink-500">
+                        {Number(b.qualityScore).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-ink-300/50 pt-4 font-mono text-caption dark:border-obsidian-500/40">
+                      <div>
+                        <dt className="text-ink-500">Builds</dt>
+                        <dd className="mt-0.5 tabular-nums">{b.totalUnitsBuilt.toLocaleString('en-GB')}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-500">RMA</dt>
+                        <dd
+                          className={`mt-0.5 tabular-nums ${Number(b.rmaRateRolling90d) > 0.04 ? 'text-semantic-critical' : 'text-brand-green'}`}
+                        >
+                          {(Number(b.rmaRateRolling90d) * 100).toFixed(1)}%
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-500">Queue</dt>
+                        <dd className="mt-0.5 tabular-nums">{queueDepth}</dd>
+                      </div>
+                    </dl>
+
+                    {/* Barber-shop wait indicator */}
+                    <div className="mt-4 flex items-center justify-between rounded-md bg-ink-100/60 px-3 py-2 dark:bg-obsidian-800/60">
+                      <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">Wait</span>
+                      <span
+                        className={`font-display text-small font-semibold ${
+                          waitDays === 0 ? 'text-brand-green' : waitDays > 5 ? 'text-semantic-warning' : ''
+                        }`}
+                      >
+                        {waitDays === 0 ? 'Available now' : `${waitDays} day${waitDays === 1 ? '' : 's'}`}
+                      </span>
+                    </div>
+
                     <span
-                      className={`font-display text-small font-semibold ${
-                        waitDays === 0 ? 'text-brand-green' : waitDays > 5 ? 'text-semantic-warning' : ''
-                      }`}
-                    >
-                      {waitDays === 0 ? 'Available now' : `${waitDays} day${waitDays === 1 ? '' : 's'}`}
-                    </span>
-                  </div>
-
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-brand-green transition-transform duration-420 ease-unfold group-hover:scale-x-100"
-                  />
-                </GlassCard>
-              </Link>
-            );
-          })}
-        </div>
+                      aria-hidden
+                      className="absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-brand-green transition-transform duration-420 ease-unfold group-hover:scale-x-100"
+                    />
+                  </GlassCard>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
     </>
   );
