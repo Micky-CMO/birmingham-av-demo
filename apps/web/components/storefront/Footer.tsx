@@ -23,10 +23,11 @@ const columns: Array<{ title: string; links: Array<{ href: string; label: string
   {
     title: 'Support',
     links: [
-      { href: '/support', label: 'Help centre' },
+      { href: '/help', label: 'Help centre' },
       { href: '/returns/new', label: 'Start a return' },
       { href: '/warranty', label: 'Warranty' },
       { href: '/shipping', label: 'Shipping' },
+      { href: '/contact', label: 'Contact' },
     ],
   },
   {
@@ -72,7 +73,15 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-ink-300/60 pt-8 text-small text-ink-500 dark:border-obsidian-500/60 sm:flex-row sm:items-center">
           <span>&copy; {new Date().getFullYear()} Birmingham AV Ltd. Registered in England, no. 12383651.</span>
-          <span className="font-mono text-caption">v0.1.0</span>
+          <div className="flex items-center gap-6 font-mono text-caption">
+            <Link
+              href="/auth/login"
+              className="uppercase tracking-[0.2em] text-ink-500 transition-colors hover:text-brand-green"
+            >
+              Staff sign in
+            </Link>
+            <span>v0.1.0</span>
+          </div>
         </div>
       </div>
     </footer>

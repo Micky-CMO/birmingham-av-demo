@@ -56,17 +56,45 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+// Persistent cookie jar - eBay serves a 37KB "splash" gate on cold requests.
+// We warm it up once (which sets session cookies), then re-use those cookies
+// on every subsequent call to get the real ~870KB pages.
+const COOKIE_JAR = path.resolve(process.cwd(), '.ebay-cookies.txt');
+let jarWarmedAt = 0;
+const JAR_TTL = 45 * 60 * 1000; // 45 min
+
+async function warmCookieJar(): Promise<void> {
+  const { exec } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execP = promisify(exec);
+  const cmd = `curl -s -L -c '${COOKIE_JAR}' -A '${UA}' -H 'Accept-Language: en-GB,en;q=0.9' 'https://www.ebay.co.uk/' -o /dev/null --max-time 20 && curl -s -L -c '${COOKIE_JAR}' -b '${COOKIE_JAR}' -A '${UA}' -H 'Accept-Language: en-GB,en;q=0.9' 'https://www.ebay.co.uk/str/${SELLER}' -o /dev/null --max-time 25`;
+  await execP(`bash -c "${cmd.replace(/"/g, '\\"')}"`).catch(() => undefined);
+  jarWarmedAt = Date.now();
+}
+
 async function fetchHtml(url: string, attempt = 1): Promise<string> {
+  if (Date.now() - jarWarmedAt > JAR_TTL) await warmCookieJar();
+
+  const { exec } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execP = promisify(exec);
+  const bashCmd = `curl -s -L -b '${COOKIE_JAR}' -c '${COOKIE_JAR}' --max-time 25 -A '${UA}' -H 'Accept-Language: en-GB,en;q=0.9' '${url}'`;
   try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': UA,
-        'Accept-Language': 'en-GB,en;q=0.9',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
+    const { stdout } = await execP(`bash -c "${bashCmd.replace(/"/g, '\\"')}"`, {
+      maxBuffer: 32 * 1024 * 1024,
+      encoding: 'utf8',
     });
-    if (res.status === 429 || res.status >= 500) throw new Error(`status ${res.status}`);
-    return await res.text();
+    const isListing = url.includes('/str/');
+    const minSize = isListing ? 80_000 : 40_000;
+    if (!stdout || stdout.length < minSize) {
+      // Splash page - refresh jar and retry once immediately
+      if (attempt === 1) {
+        jarWarmedAt = 0;
+        await warmCookieJar();
+      }
+      throw new Error(`short response ${stdout.length} bytes`);
+    }
+    return stdout;
   } catch (err) {
     if (attempt >= 4) throw err;
     await sleep(2 ** attempt * 800);

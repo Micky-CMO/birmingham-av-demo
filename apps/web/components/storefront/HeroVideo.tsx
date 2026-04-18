@@ -8,33 +8,24 @@ import { MagneticButton } from '@/components/fx/MagneticButton';
 import { AmbientBeams } from '@/components/fx/AmbientBeams';
 
 /**
- * Hero with the logo video as its own clean block on top, then the kinetic
- * headline and CTAs in a dedicated section below. No overlap. The video
- * gently parallaxes on scroll so there's still a premium feel.
+ * Cinematic hero. Full-bleed video plate fills the top viewport, then a
+ * dedicated editorial section below with massive kinetic headline, eyebrow,
+ * body copy, CTAs, and a data strip.
  */
 export function HeroVideo() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
-  const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
-  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.06]);
-  const textY = useTransform(scrollYProgress, [0, 1], ['0%', '-12%']);
+  const videoY = useTransform(scrollYProgress, [0, 1], ['0%', '18%']);
+  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
+  const videoOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.4]);
 
   return (
-    <section
-      ref={ref}
-      className="relative w-full overflow-hidden bg-ink-50 pb-28 dark:bg-obsidian-950"
-    >
+    <section ref={ref} className="relative w-full overflow-hidden bg-ink-50 dark:bg-obsidian-950">
       <AmbientBeams />
 
-      {/* Video block — clean, prominent, its own rectangle at the top */}
-      <div className="relative mx-auto max-w-7xl px-6 pt-8 md:pt-14">
-        <motion.div
-          style={{ y: videoY, scale: videoScale }}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="relative aspect-[21/9] w-full overflow-hidden rounded-2xl border border-ink-300/50 bg-white shadow-glass-light dark:border-obsidian-500/50 dark:bg-obsidian-900 dark:shadow-glass-dark md:aspect-[21/8]"
-        >
+      {/* ============ VIDEO PLATE ============ */}
+      <div className="relative h-[78vh] min-h-[560px] w-full overflow-hidden">
+        <motion.div style={{ y: videoY, scale: videoScale, opacity: videoOpacity }} className="absolute inset-0">
           <video
             autoPlay
             muted
@@ -46,105 +37,194 @@ export function HeroVideo() {
           >
             <source src="/brand/hero.mp4" type="video/mp4" />
           </video>
-
-          {/* Subtle inner vignette */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{ boxShadow: 'inset 0 0 160px rgba(0,0,0,0.18)' }}
-          />
-
-          {/* Scanline for cinema feel */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-20"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 3px)',
-            }}
-          />
-
-          {/* Floating brand chip top-left of the video */}
-          <div className="pointer-events-none absolute left-5 top-5 flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 font-mono text-caption uppercase tracking-widest text-ink-700 backdrop-blur-glass dark:bg-obsidian-900/60 dark:text-ink-300">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse-green rounded-full bg-brand-green" />
-            Built in Birmingham
-          </div>
         </motion.div>
-      </div>
 
-      {/* Text + CTAs block — full width, below the video */}
-      <motion.div
-        style={{ y: textY }}
-        className="relative z-10 mx-auto mt-16 max-w-7xl px-6 md:mt-20"
-      >
-        <KineticHeadline text="Refurbished PCs, built by people who know them." />
+        {/* Inner vignette for depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ boxShadow: 'inset 0 0 260px rgba(0,0,0,0.22)' }}
+        />
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-6 max-w-2xl text-body text-ink-700 dark:text-ink-300 md:text-lg"
-        >
-          Tested, warrantied, and shipped from Birmingham. Over twenty in-house builders assemble every machine you buy.
-        </motion.p>
+        {/* Scanlines */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-20"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 3px)',
+          }}
+        />
 
+        {/* Bottom fade into the editorial band */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-b from-transparent via-ink-50/75 to-ink-50 dark:via-obsidian-950/75 dark:to-obsidian-950" />
+
+        {/* Floating brand chip */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-8 flex flex-wrap items-center gap-3"
+          transition={{ delay: 0.6, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute left-1/2 top-8 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-white/60 px-4 py-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-900 backdrop-blur-glass dark:border-white/10 dark:bg-obsidian-900/60 dark:text-ink-50"
         >
-          <MagneticButton strength={18}>
-            <Link href="/shop">
-              <Button size="lg" className="px-8 text-base">
-                Shop PCs
-              </Button>
-            </Link>
-          </MagneticButton>
-          <MagneticButton strength={18}>
-            <Link href="/shop/gaming-pc-bundles">
-              <Button size="lg" variant="outline" className="px-8 text-base">
-                Gaming bundles
-              </Button>
-            </Link>
-          </MagneticButton>
+          <span className="inline-block h-1.5 w-1.5 animate-pulse-green rounded-full bg-brand-green" />
+          Since 2020 · Hand-built in Birmingham
+        </motion.div>
+
+        {/* Corner metadata (cinema style) */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 1.5 }}
+          className="absolute left-6 top-8 z-10 hidden items-center gap-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-500 md:flex"
+        >
+          <span>BAV</span>
+          <span>·</span>
+          <span>REEL 01</span>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 1.2 }}
-          className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-caption uppercase tracking-widest text-ink-500 dark:text-ink-300"
+          transition={{ delay: 1.5, duration: 1.5 }}
+          className="absolute right-6 top-8 z-10 hidden items-center gap-2 font-mono text-caption uppercase tracking-[0.2em] text-ink-500 md:flex"
         >
-          <span>82K sold on eBay</span>
-          <span aria-hidden>·</span>
-          <span>98.4% positive</span>
-          <span aria-hidden>·</span>
-          <span>12-month warranty</span>
-          <span aria-hidden>·</span>
-          <span>Free UK shipping</span>
+          <span>B'HAM · UK</span>
+          <span>·</span>
+          <span>REFURB</span>
         </motion.div>
-      </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.2, duration: 1 }}
+          className="absolute bottom-16 left-1/2 z-10 -translate-x-1/2 font-mono text-caption uppercase tracking-[0.3em] text-ink-500"
+        >
+          <motion.span animate={{ y: [0, 6, 0] }} transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}>
+            scroll ↓
+          </motion.span>
+        </motion.div>
+      </div>
+
+      {/* ============ EDITORIAL BAND ============ */}
+      <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-6 md:pb-32 md:pt-12">
+        {/* Eyebrow */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="mb-8 flex items-center gap-3 font-mono text-caption uppercase tracking-[0.3em] text-ink-500"
+        >
+          <span aria-hidden className="h-px w-10 bg-brand-green" />
+          <span>The Birmingham AV catalogue · Spring 2026</span>
+        </motion.div>
+
+        <KineticHeadline />
+
+        <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-12">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="text-body leading-relaxed text-ink-700 dark:text-ink-300 md:col-span-5 md:text-lg"
+          >
+            Every machine is tested, warrantied, and shipped from Birmingham. Over twenty in-house builders assemble your
+            kit, sign their name against it, and stand behind it for twelve months.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col items-start gap-4 md:col-span-7 md:items-end"
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <MagneticButton strength={18}>
+                <Link href="/shop">
+                  <Button size="lg" className="px-9 text-base">
+                    Shop all PCs
+                  </Button>
+                </Link>
+              </MagneticButton>
+              <MagneticButton strength={18}>
+                <Link href="/shop/gaming-pc-bundles">
+                  <Button size="lg" variant="outline" className="px-9 text-base">
+                    Gaming bundles
+                  </Button>
+                </Link>
+              </MagneticButton>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Data strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.6, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-20 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-ink-300/50 bg-ink-300/50 md:grid-cols-4 dark:border-obsidian-500/40 dark:bg-obsidian-500/30"
+        >
+          {[
+            { k: 'Units sold', v: '82K', sub: 'lifetime on eBay' },
+            { k: 'Positive', v: '98.4%', sub: 'customer feedback' },
+            { k: 'Builders', v: '22', sub: 'in-house, signed' },
+            { k: 'Warranty', v: '12mo', sub: 'parts + labour' },
+          ].map((s) => (
+            <div
+              key={s.k}
+              className="group relative flex flex-col gap-1 bg-ink-50 p-6 transition-colors hover:bg-white dark:bg-obsidian-950 dark:hover:bg-obsidian-900"
+            >
+              <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">{s.k}</span>
+              <span className="font-display text-[clamp(2rem,3.2vw,2.75rem)] font-semibold leading-none tracking-[-0.02em]">
+                {s.v}
+              </span>
+              <span className="text-caption text-ink-500">{s.sub}</span>
+              <span
+                aria-hidden
+                className="absolute bottom-0 left-0 h-px w-0 bg-brand-green transition-all duration-700 group-hover:w-full"
+              />
+            </div>
+          ))}
+        </motion.div>
+      </div>
     </section>
   );
 }
 
-function KineticHeadline({ text }: { text: string }) {
+const LINE_1 = 'Refurbished PCs,';
+const LINE_2 = 'built by people';
+const LINE_3 = 'who know them.';
+
+function KineticHeadline() {
+  return (
+    <h1 className="font-display text-[clamp(2.75rem,9vw,8rem)] font-semibold leading-[0.95] tracking-[-0.035em]">
+      <Line text={LINE_1} startDelay={0.25} />
+      <Line text={LINE_2} startDelay={0.55} highlight={['people']} />
+      <Line text={LINE_3} startDelay={0.95} />
+    </h1>
+  );
+}
+
+function Line({ text, startDelay, highlight }: { text: string; startDelay: number; highlight?: string[] }) {
   const words = text.split(' ');
   return (
-    <h1 className="font-display text-[clamp(2.25rem,6vw,5rem)] font-semibold leading-[1.02] tracking-[-0.03em]">
-      {words.map((w, i) => (
-        <span key={i} className="mr-[0.25em] inline-block overflow-hidden align-bottom">
-          <motion.span
-            initial={{ opacity: 0, y: '110%', filter: 'blur(12px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ delay: 0.2 + i * 0.06, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className={`inline-block ${i === 5 ? 'text-brand-green' : ''}`}
-          >
-            {w}
-          </motion.span>
-        </span>
-      ))}
-    </h1>
+    <span className="block">
+      {words.map((w, i) => {
+        const clean = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+        const isHighlight = highlight?.includes(clean);
+        return (
+          <span key={i} className="mr-[0.22em] inline-block overflow-hidden align-bottom">
+            <motion.span
+              initial={{ opacity: 0, y: '110%', filter: 'blur(14px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ delay: startDelay + i * 0.06, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              className={`inline-block ${isHighlight ? 'text-brand-green' : ''}`}
+            >
+              {w}
+            </motion.span>
+          </span>
+        );
+      })}
+    </span>
   );
 }
