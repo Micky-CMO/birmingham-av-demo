@@ -195,13 +195,41 @@ function parseStorePage(html: string): Card[] {
     const priceText = $el.find('.str-item-card__property-displayPrice').text().trim();
     const itemUrl = $el.find('a').attr('href') ?? '';
     const itemId = extractItemId(itemUrl);
-    const img = $el.find('img').attr('src') ?? $el.find('img').attr('data-src') ?? '';
+
+    // Product image is inside <picture> under the property-image class.
+    // Priority: source[srcset] (WebP), then img[src] (PNG/JPG fallback), then
+    // reconstruct from data-testid="str-img" imageId attr, then any other img
+    // in the card that's hosted on ebayimg.com (skips heart/watch icons).
+    let img = '';
+    const $picture = $el.find('.str-item-card__property-image picture, picture.str-image').first();
+    if ($picture.length) {
+      img =
+        $picture.find('source').attr('srcset') ??
+        $picture.find('img').attr('src') ??
+        $picture.find('img').attr('data-src') ??
+        '';
+    }
+    if (!img) {
+      // Last resort: reconstruct from imageId attr
+      const $byTestId = $el.find('[data-testid="str-img"]').first();
+      const imageId = $byTestId.attr('imageId');
+      if (imageId) img = `https://i.ebayimg.com/images/g/${imageId}/s-l800.jpg`;
+    }
+    if (!img) {
+      // Find any img hosted on ebayimg.com, skipping logo/heart icons
+      $el.find('img').each((_i, imgEl) => {
+        if (img) return;
+        const src = $(imgEl).attr('src') ?? $(imgEl).attr('data-src') ?? '';
+        if (src.includes('i.ebayimg.com/images/g/')) img = src;
+      });
+    }
+
     if (!title || !itemId || !priceText) return;
     cards.push({
       ebayItemId: itemId,
       title,
       priceGbp: priceToNumber(priceText),
-      imageUrl: img.replace('s-l300', 's-l800'), // upgrade to higher res
+      imageUrl: img.replace('s-l300', 's-l800').replace('s-l225', 's-l800').replace('.webp', '.jpg'),
       itemUrl: itemUrl.split('?')[0] ?? itemUrl,
     });
   });
