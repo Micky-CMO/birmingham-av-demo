@@ -10,6 +10,7 @@ import { ProductSchema } from '@/components/seo/ProductSchema';
 import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
 import { buildProductTitle, buildProductDescription } from '@/lib/seo/metadata';
 import { ReviewsList, type ReviewItem } from '@/components/product/ReviewsList';
+import { FrequentlyBoughtTogether } from '@/components/product/FrequentlyBoughtTogether';
 
 export const dynamic = 'force-dynamic';
 
@@ -377,6 +378,10 @@ export default async function ProductPage({ params }: { params: { slug: string }
       <div className="border-t border-ink-10">
         <ReviewsList product={{ slug: product.slug }} reviews={reviews} />
       </div>
+
+      {/* Frequently bought together */}
+      <FrequentlyBoughtTogether productId={product.productId} />
+
 
       {/* Timeline */}
       <section className="border-t border-ink-10 bg-paper-2">
