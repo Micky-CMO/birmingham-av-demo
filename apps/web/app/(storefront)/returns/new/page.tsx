@@ -1,81 +1,132 @@
-'use client';
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { prisma } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import { AccountShell } from '@/components/account/AccountShell';
+import { NewReturnForm, type EligibleOrderItem } from './NewReturnForm';
 
-import { useState } from 'react';
-import { Button, GlassCard, Input } from '@/components/ui';
+export const metadata: Metadata = {
+  title: 'Start a return',
+  description:
+    '30 days, no questions. Hardware faults covered for 12 months under warranty. Start a return on your Birmingham AV order.',
+  robots: { index: false, follow: false },
+};
+export const dynamic = 'force-dynamic';
 
-const REASONS = [
-  { value: 'dead_on_arrival', label: 'Dead on arrival' },
-  { value: 'hardware_fault', label: 'Hardware fault' },
-  { value: 'not_as_described', label: 'Not as described' },
-  { value: 'damaged_in_transit', label: 'Damaged in transit' },
-  { value: 'changed_mind', label: 'Changed my mind' },
-  { value: 'wrong_item', label: 'Wrong item' },
-  { value: 'other', label: 'Other' },
-] as const;
+// Orders delivered less than 30 days ago are eligible for "changed mind" returns.
+// Hardware faults are still eligible after that under the warranty. The UI
+// shows both, but "out of window" items are disabled.
+const RETURN_WINDOW_DAYS = 30;
 
-export default function NewReturnPage() {
-  const [reason, setReason] = useState<(typeof REASONS)[number]['value']>('hardware_fault');
+export default async function NewReturnPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const current = await getCurrentUser();
+  if (!current) redirect('/auth/login?next=/returns/new');
+
+  const orderItemParam =
+    typeof searchParams.orderItem === 'string' ? searchParams.orderItem : undefined;
+
+  const [orders, avSub] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        userId: current.userId,
+        status: 'delivered',
+      },
+      orderBy: { deliveredAt: 'desc' },
+      include: {
+        items: {
+          include: {
+            product: { select: { title: true, sku: true } },
+            builder: { select: { displayName: true, builderCode: true } },
+          },
+        },
+      },
+    }),
+    prisma.avCareSubscription.findUnique({
+      where: { userId: current.userId },
+      select: { status: true },
+    }),
+  ]);
+
+  const now = Date.now();
+  const items: EligibleOrderItem[] = orders.flatMap((o) => {
+    const deliveredAt = o.deliveredAt;
+    const daysSinceDelivery = deliveredAt
+      ? Math.floor((now - deliveredAt.getTime()) / 86_400_000)
+      : 0;
+    const windowDaysLeft = Math.max(0, RETURN_WINDOW_DAYS - daysSinceDelivery);
+    return o.items.map((it) => ({
+      orderItemId: it.orderItemId,
+      orderNumber: o.orderNumber,
+      deliveredAt: deliveredAt?.toISOString() ?? null,
+      windowDaysLeft,
+      title: it.product.title,
+      sku: it.product.sku,
+      buildNumber: buildNumberFromSku(it.product.sku),
+      pricePerUnitGbp: Number(it.pricePerUnitGbp),
+      qty: it.qty,
+      builderDisplayName: it.builder?.displayName ?? null,
+      builderCode: it.builder?.builderCode ?? null,
+    }));
+  });
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-h1 font-display">Start a return</h1>
-      <p className="mt-2 text-ink-500">Have an order number to hand. Returns are normally processed within 48 hours.</p>
+    <AccountShell activeKey="returns" avCareStatus={avSub?.status ?? null}>
+      {/* Breadcrumb */}
+      <div
+        className="font-mono"
+        style={{
+          fontSize: 11,
+          color: 'var(--ink-60)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.18em',
+          marginBottom: 24,
+        }}
+      >
+        <Link href="/account" className="bav-hover-opa" style={{ color: 'var(--ink-60)', textDecoration: 'none' }}>
+          Account
+        </Link>
+        <span style={{ margin: '0 10px', color: 'var(--ink-30)' }}>/</span>
+        <Link
+          href="/account/returns"
+          className="bav-hover-opa"
+          style={{ color: 'var(--ink-60)', textDecoration: 'none' }}
+        >
+          Returns
+        </Link>
+        <span style={{ margin: '0 10px', color: 'var(--ink-30)' }}>/</span>
+        <span style={{ color: 'var(--ink)' }}>New</span>
+      </div>
 
-      <form className="mt-8 space-y-6">
-        <GlassCard className="p-6">
-          <label className="block text-caption text-ink-500">Order number</label>
-          <Input placeholder="BAV-260417-000123" className="mt-2" required />
-        </GlassCard>
+      <h1
+        className="font-display"
+        style={{
+          fontWeight: 300,
+          fontSize: 'clamp(32px, 3.5vw, 48px)',
+          letterSpacing: '-0.01em',
+          lineHeight: 1.06,
+          margin: 0,
+          marginBottom: 12,
+        }}
+      >
+        Start a <span className="bav-italic">return</span>.
+      </h1>
+      <p style={{ fontSize: 15, color: 'var(--ink-60)', lineHeight: 1.6, margin: 0, marginBottom: 64, maxWidth: 560 }}>
+        30 days, no questions. Hardware faults covered for 12 months under warranty. We review each return by
+        hand, usually within a working day. Tell us what happened and we&apos;ll take it from there.
+      </p>
 
-        <GlassCard className="p-6">
-          <label className="block text-caption text-ink-500">Item</label>
-          <select
-            className="mt-2 h-10 w-full rounded-md border border-ink-300 bg-white px-3 dark:border-obsidian-500 dark:bg-obsidian-900"
-            defaultValue=""
-          >
-            <option value="" disabled>Select an item</option>
-            <option>Aegis Ultra gaming PC (BAV-FEAT-001)</option>
-          </select>
-        </GlassCard>
-
-        <GlassCard className="p-6">
-          <label className="block text-caption text-ink-500">Reason</label>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {REASONS.map((r) => (
-              <button
-                key={r.value}
-                type="button"
-                onClick={() => setReason(r.value)}
-                className={`rounded-sm px-3 py-1 text-caption ${
-                  reason === r.value
-                    ? 'bg-brand-green text-white'
-                    : 'bg-ink-100 text-ink-700 dark:bg-obsidian-800 dark:text-ink-300'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </GlassCard>
-
-        <GlassCard className="p-6">
-          <label className="block text-caption text-ink-500">Details</label>
-          <textarea
-            rows={6}
-            className="mt-2 w-full rounded-md border border-ink-300 bg-white p-3 text-body dark:border-obsidian-500 dark:bg-obsidian-900"
-            placeholder="Tell us what happened. The more detail, the faster we can help."
-          />
-        </GlassCard>
-
-        <GlassCard className="p-6">
-          <label className="block text-caption text-ink-500">Photos (optional)</label>
-          <div className="mt-3 rounded-md border border-dashed border-ink-300 p-10 text-center text-small text-ink-500 dark:border-obsidian-500">
-            Drop up to 10 images here. Uploaded to S3 on submit.
-          </div>
-        </GlassCard>
-
-        <Button size="lg">Submit return request</Button>
-      </form>
-    </div>
+      <NewReturnForm items={items} preSelectedOrderItemId={orderItemParam ?? null} />
+    </AccountShell>
   );
+}
+
+function buildNumberFromSku(sku: string): string | null {
+  const m = sku.match(/(\d+)\s*$/);
+  if (!m || !m[1]) return null;
+  return m[1].padStart(3, '0').slice(-3);
 }
