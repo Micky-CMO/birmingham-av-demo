@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 
-const DENOMINATIONS = [50, 100, 250, 500];
+const DENOMINATIONS = [10, 25, 50, 100, 250];
 
 const FAQS = [
   {

@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 type NavKey =
   | 'dashboard'
   | 'orders'
+  | 'workshop-floor'
   | 'builders'
   | 'returns'
   | 'support'
@@ -19,22 +20,36 @@ type NavKey =
   | 'builder-portal'
   | 'inventory';
 
-const NAV: { key: NavKey; label: string; href: string }[] = [
+type NavItem = { key: NavKey; label: string; href: string };
+
+/**
+ * Primary nav — always visible. Six most-used day-to-day tabs.
+ */
+const PRIMARY_NAV: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/admin/dashboard' },
   { key: 'orders', label: 'Orders', href: '/admin/orders' },
+  { key: 'workshop-floor', label: 'Workshop', href: '/admin/workshop-floor' },
   { key: 'builders', label: 'Builders', href: '/admin/builders' },
-  { key: 'returns', label: 'Returns', href: '/admin/returns' },
   { key: 'support', label: 'Support', href: '/admin/support' },
+  { key: 'products', label: 'Products', href: '/admin/products' },
+];
+
+/**
+ * Secondary nav — under a "More" disclosure. Less frequent surfaces.
+ */
+const MORE_NAV: NavItem[] = [
+  { key: 'returns', label: 'Returns', href: '/admin/returns' },
   { key: 'reviews', label: 'Reviews', href: '/admin/reviews' },
   { key: 'marketing', label: 'Marketing', href: '/admin/discounts' },
-  { key: 'products', label: 'Products', href: '/admin/products' },
   { key: 'staff', label: 'Staff', href: '/admin/staff' },
   { key: 'analytics', label: 'Analytics', href: '/admin/analytics' },
-  { key: 'developers', label: 'Developers', href: '/admin/webhooks' },
   { key: 'payouts', label: 'Payouts', href: '/admin/payouts' },
+  { key: 'developers', label: 'Developers', href: '/admin/webhooks' },
   { key: 'reports', label: 'Reports', href: '/admin/reports' },
   { key: 'settings', label: 'Settings', href: '/admin/settings' },
 ];
+
+const NAV: NavItem[] = [...PRIMARY_NAV, ...MORE_NAV];
 
 /**
  * Derive the active nav key from the current pathname. Uses the `x-pathname`
@@ -87,7 +102,7 @@ export function AdminNav({
           </span>
         </Link>
         <div className="bav-admin-nav-links">
-          {NAV.map((it) => (
+          {PRIMARY_NAV.map((it) => (
             <Link
               key={it.key}
               href={it.href}
@@ -96,6 +111,32 @@ export function AdminNav({
               {it.label}
             </Link>
           ))}
+          <details className="bav-admin-more">
+            <summary
+              className={
+                'bav-tab-link bav-admin-more-summary' +
+                (MORE_NAV.some((it) => it.key === active) ? ' active' : '')
+              }
+            >
+              More
+              <span aria-hidden className="bav-admin-more-caret">
+                ▾
+              </span>
+            </summary>
+            <div className="bav-admin-more-panel">
+              {MORE_NAV.map((it) => (
+                <Link
+                  key={it.key}
+                  href={it.href}
+                  className={
+                    'bav-admin-more-item' + (active === it.key ? ' active' : '')
+                  }
+                >
+                  {it.label}
+                </Link>
+              ))}
+            </div>
+          </details>
         </div>
         <div className="bav-admin-nav-util">
           <span className="bav-pulse" title="Systems nominal" />

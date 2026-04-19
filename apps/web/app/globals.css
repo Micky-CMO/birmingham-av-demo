@@ -1547,6 +1547,57 @@ textarea {
   }
 }
 
+/* Admin nav "More" disclosure — Apple-pattern overflow menu */
+.bav-admin-more {
+  position: relative;
+}
+.bav-admin-more[open] .bav-admin-more-caret {
+  transform: rotate(180deg);
+}
+.bav-admin-more-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.bav-admin-more-summary::-webkit-details-marker {
+  display: none;
+}
+.bav-admin-more-caret {
+  font-size: 10px;
+  color: var(--ink-60);
+  transition: transform 180ms ease;
+}
+.bav-admin-more-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  min-width: 200px;
+  background: var(--paper);
+  border: 1px solid var(--ink-10);
+  box-shadow: 0 12px 36px rgba(10, 10, 10, 0.08);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+}
+.bav-admin-more-item {
+  display: block;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 180ms ease;
+}
+.bav-admin-more-item:hover {
+  background: var(--paper-2);
+}
+.bav-admin-more-item.active {
+  color: var(--accent);
+}
+
 .bav-admin-footer {
   border-top: 1px solid var(--ink-10);
   margin-top: auto;
