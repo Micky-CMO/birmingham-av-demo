@@ -1,25 +1,29 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
-const inter = Inter({
+const fraunces = Fraunces({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-fraunces',
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  axes: ['SOFT', 'WONK', 'opsz'],
 });
 
-const interDisplay = Inter({
+const instrumentSans = Instrument_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter-display',
-  weight: ['600', '700'],
+  variable: '--font-instrument-sans',
+  weight: ['400', '500', '600', '700'],
 });
 
-const jetBrains = JetBrains_Mono({
+const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-jetbrains',
+  variable: '--font-jetbrains-mono',
+  weight: ['400', '500', '600'],
 });
 
 export const metadata: Metadata = {
@@ -78,26 +82,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en-GB"
-      className={`${inter.variable} ${interDisplay.variable} ${jetBrains.variable}`}
-      suppressHydrationWarning
+      className={`${fraunces.variable} ${instrumentSans.variable} ${jetBrainsMono.variable}`}
     >
-      <head>
-        <script
-          // Set the theme class before paint so we never flash.
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                var saved = localStorage.getItem('bav-theme');
-                var dark = saved === 'dark' || (saved === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-                if (saved === null) saved = 'light';
-                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-                document.documentElement.classList.toggle('dark', dark);
-              } catch (e) {}
-            `,
-          }}
-        />
-      </head>
-      <body className="min-h-dvh font-sans text-body text-ink-900 antialiased dark:text-ink-50">
+      <body className="min-h-dvh bg-paper font-sans text-body text-ink antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

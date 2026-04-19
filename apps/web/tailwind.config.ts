@@ -64,9 +64,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-inter-display)', 'system-ui', 'sans-serif'],
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
+        display: ['var(--font-fraunces)', 'ui-serif', 'Georgia', 'serif'],
+        sans: ['var(--font-instrument-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
         'display-xl': ['72px', { lineHeight: '1.02', letterSpacing: '-0.035em', fontWeight: '600' }],
