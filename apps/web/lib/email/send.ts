@@ -85,6 +85,9 @@ export async function sendEmail({
  */
 import WelcomeEmail, { type WelcomeProps } from '@/emails/auth/Welcome';
 import PasswordResetEmail, { type PasswordResetProps } from '@/emails/auth/PasswordReset';
+import BusinessApplicationReceivedEmail, {
+  type BusinessApplicationReceivedProps,
+} from '@/emails/auth/BusinessApplicationReceived';
 import OrderConfirmationEmail, { type OrderConfirmationProps } from '@/emails/commerce/OrderConfirmation';
 import DispatchedEmail, { type DispatchedProps } from '@/emails/commerce/Dispatched';
 import DeliveredEmail, { type DeliveredProps } from '@/emails/commerce/Delivered';
@@ -106,6 +109,14 @@ export const bavEmail = {
       subject: 'Reset your Birmingham AV password',
       template: PasswordResetEmail(props),
       tags: [{ name: 'category', value: 'auth-password-reset' }],
+    }),
+
+  businessApplicationReceived: (to: string, props: BusinessApplicationReceivedProps) =>
+    sendEmail({
+      to,
+      subject: `Trade account application received — ${props.companyName}`,
+      template: BusinessApplicationReceivedEmail(props),
+      tags: [{ name: 'category', value: 'auth-business-application' }],
     }),
 
   orderConfirmation: (to: string, props: OrderConfirmationProps) =>

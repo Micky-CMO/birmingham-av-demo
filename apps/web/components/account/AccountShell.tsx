@@ -6,6 +6,7 @@ export type AccountSectionKey =
   | 'orders'
   | 'returns'
   | 'addresses'
+  | 'business'
   | 'av-care'
   | 'security'
   | 'notifications';
@@ -30,6 +31,7 @@ const LINKS: Array<{ key: AccountSectionKey; label: string; href: string }> = [
   { key: 'orders', label: 'Orders', href: '/account/orders' },
   { key: 'returns', label: 'Returns', href: '/account/returns' },
   { key: 'addresses', label: 'Addresses', href: '/account/addresses' },
+  { key: 'business', label: 'Business', href: '/account/business' },
   { key: 'av-care', label: 'AV Care', href: '/account/av-care' },
   { key: 'security', label: 'Security', href: '/account/security' },
   { key: 'notifications', label: 'Notifications', href: '/account/notifications' },
