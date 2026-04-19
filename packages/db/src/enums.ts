@@ -10,4 +10,10 @@ export {
   TicketStatus,
   TicketChannel,
   UnitState,
+  AvCareTier,
+  AvCareStatus,
+  AvCareReason,
+  AvCareClaimStatus,
+  InventoryAction,
+  ReviewAdminStatus,
 } from '@prisma/client';
