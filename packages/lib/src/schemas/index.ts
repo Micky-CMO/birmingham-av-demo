@@ -57,10 +57,12 @@ export const CreateReturnSchema = z.object({
 });
 
 export const CreateReviewSchema = z.object({
+  productId: z.string().uuid(),
   orderItemId: z.string().uuid(),
   rating: z.number().int().min(1).max(5),
   title: z.string().max(140).optional(),
   body: z.string().min(10).max(5000),
+  photoUrls: z.array(z.string().url()).max(5).default([]),
 });
 
 export const SupportMessageSchema = z.object({
