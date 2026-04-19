@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36" role="img" aria-label="Royal Mail">
+  <rect width="60" height="36" rx="4" fill="#CC0000"/>
+  <g fill="#FFCC00" transform="translate(8 8)">
+    <!-- Crown -->
+    <path d="M0 4 L1.5 1 L3 4 L4.5 1 L6 4 L7.5 1 L9 4 L9 6 L0 6 Z"/>
+    <rect x="-0.5" y="6" width="10" height="1.2"/>
+  </g>
+  <text x="38" y="22" text-anchor="middle" fill="#FFCC00" font-family="Georgia, serif" font-weight="700" font-size="6.5">ROYAL MAIL</text>
+</svg>
