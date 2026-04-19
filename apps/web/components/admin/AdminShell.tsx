@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { headers } from 'next/headers';
 
 type NavKey =
@@ -11,27 +12,30 @@ type NavKey =
   | 'reviews'
   | 'marketing'
   | 'products'
+  | 'payments'
   | 'staff'
   | 'analytics'
   | 'developers'
   | 'payouts'
   | 'reports'
   | 'settings'
+  | 'profile'
   | 'builder-portal'
   | 'inventory';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
 /**
- * Primary nav — always visible. Six most-used day-to-day tabs.
+ * Primary nav — always visible. Seven most-used day-to-day tabs.
  */
 const PRIMARY_NAV: NavItem[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/admin/dashboard' },
   { key: 'orders', label: 'Orders', href: '/admin/orders' },
+  { key: 'products', label: 'Products', href: '/admin/products' },
+  { key: 'payments', label: 'Payments', href: '/admin/payments' },
   { key: 'workshop-floor', label: 'Workshop', href: '/admin/workshop-floor' },
   { key: 'builders', label: 'Builders', href: '/admin/builders' },
   { key: 'support', label: 'Support', href: '/admin/support' },
-  { key: 'products', label: 'Products', href: '/admin/products' },
 ];
 
 /**
@@ -43,7 +47,7 @@ const MORE_NAV: NavItem[] = [
   { key: 'marketing', label: 'Marketing', href: '/admin/discounts' },
   { key: 'staff', label: 'Staff', href: '/admin/staff' },
   { key: 'analytics', label: 'Analytics', href: '/admin/analytics' },
-  { key: 'payouts', label: 'Payouts', href: '/admin/payouts' },
+  { key: 'payouts', label: 'Builder payouts', href: '/admin/payouts' },
   { key: 'developers', label: 'Developers', href: '/admin/webhooks' },
   { key: 'reports', label: 'Reports', href: '/admin/reports' },
   { key: 'settings', label: 'Settings', href: '/admin/settings' },
@@ -79,6 +83,8 @@ function activeKey(): NavKey | null {
   if (path.includes('/admin/payouts')) return 'payouts';
   if (path.includes('/admin/reports')) return 'reports';
   if (path.includes('/admin/settings')) return 'settings';
+  if (path.includes('/admin/profile')) return 'profile';
+  if (path.includes('/admin/payments')) return 'payments';
   return null;
 }
 
@@ -95,7 +101,15 @@ export function AdminNav({
   return (
     <nav className="bav-admin-nav">
       <div className="bav-admin-nav-inner">
-        <Link href="/admin/dashboard" className="flex items-baseline gap-[14px]">
+        <Link href="/admin/dashboard" className="flex items-center gap-[14px]">
+          <Image
+            src="/brand/favicon-mark.png"
+            alt="Birmingham AV"
+            width={128}
+            height={128}
+            priority
+            className="h-8 w-8"
+          />
           <span className="bav-admin-nav-wordmark">Birmingham AV</span>
           <span className="bav-label" style={{ color: 'var(--ink-30)' }}>
             / Admin
@@ -140,10 +154,39 @@ export function AdminNav({
         </div>
         <div className="bav-admin-nav-util">
           <span className="bav-pulse" title="Systems nominal" />
-          <span className="bav-label hidden sm:inline" style={{ color: 'var(--ink-60)' }}>
-            {initials} · {role.replace('_', ' ')}
-          </span>
-          <div className="bav-admin-avatar">{initials}</div>
+          <details className="bav-admin-profile">
+            <summary className="bav-admin-profile-summary">
+              <span className="bav-label hidden sm:inline" style={{ color: 'var(--ink-60)' }}>
+                {initials} · {role.replace('_', ' ')}
+              </span>
+              <div className="bav-admin-avatar">{initials}</div>
+            </summary>
+            <div className="bav-admin-profile-panel">
+              <div className="bav-admin-profile-header">
+                <div className="font-display" style={{ fontSize: 15, lineHeight: 1.2 }}>
+                  {initials}
+                </div>
+                <div className="bav-label mt-1" style={{ color: 'var(--ink-60)' }}>
+                  {role.replace('_', ' ')}
+                </div>
+              </div>
+              <Link href="/admin/profile" className="bav-admin-profile-item">
+                My profile
+              </Link>
+              <Link href="/admin/settings" className="bav-admin-profile-item">
+                Settings
+              </Link>
+              <Link href="/" className="bav-admin-profile-item">
+                Back to storefront
+              </Link>
+              <div className="bav-admin-profile-divider" />
+              <form action="/api/auth/signout" method="POST">
+                <button type="submit" className="bav-admin-profile-item bav-admin-profile-signout">
+                  Sign out
+                </button>
+              </form>
+            </div>
+          </details>
         </div>
       </div>
     </nav>

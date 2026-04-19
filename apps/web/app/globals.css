@@ -1598,6 +1598,63 @@ textarea {
   color: var(--accent);
 }
 
+/* Admin profile avatar dropdown */
+.bav-admin-profile {
+  position: relative;
+}
+.bav-admin-profile-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.bav-admin-profile-summary::-webkit-details-marker {
+  display: none;
+}
+.bav-admin-profile-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  min-width: 240px;
+  background: var(--paper);
+  border: 1px solid var(--ink-10);
+  box-shadow: 0 12px 36px rgba(10, 10, 10, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 60;
+}
+.bav-admin-profile-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ink-10);
+}
+.bav-admin-profile-item {
+  display: block;
+  padding: 12px 18px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  transition: background 180ms ease;
+}
+.bav-admin-profile-item:hover {
+  background: var(--paper-2);
+}
+.bav-admin-profile-divider {
+  height: 1px;
+  background: var(--ink-10);
+  margin: 0;
+}
+.bav-admin-profile-signout {
+  color: #B94040;
+}
+
 .bav-admin-footer {
   border-top: 1px solid var(--ink-10);
   margin-top: auto;
