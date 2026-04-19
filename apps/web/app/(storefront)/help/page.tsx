@@ -1,86 +1,358 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { PageHero } from '@/components/storefront/PageHero';
-import { GlassCard, Button } from '@/components/ui';
+import { HelpSearch } from '@/components/editorial/HelpSearch';
 
 export const metadata: Metadata = {
   title: 'Help centre',
   description:
-    'Birmingham AV help centre: answers on PC delivery, returns, warranty, upgrades, payment methods, and builder assignment for new and refurbished kit.',
+    'Answers to the things most people write in about. If nothing here resolves it, the chat widget is routed to a human within working hours.',
 };
 
-const FAQS = [
-  {
-    q: 'How long does delivery take?',
-    a: 'UK mainland orders placed before 3pm ship same day for next-working-day delivery. Highlands + Islands typically 2 working days.',
-  },
-  {
-    q: 'Are your PCs new or refurbished?',
-    a: 'Both. We sell brand-new machines alongside professionally refurbished ones, bench-tested and priced well below new. Every unit ships with a 12-month warranty and a clearly labelled condition grade, from Brand New through Like New to Good.',
-  },
-  {
-    q: 'What if my PC arrives faulty?',
-    a: 'Start a return from your account within 30 days for a full refund, or raise a warranty claim at any point in the 12-month cover. We courier both ways on warranty claims.',
-  },
-  {
-    q: 'Can I upgrade the spec after purchase?',
-    a: 'Yes. Contact support with your order number and we will quote the upgrade + fitting fee. Most upgrades are turned around in 3 working days.',
-  },
-  {
-    q: 'Do you ship internationally?',
-    a: 'We ship to the EU and select international destinations. Shipping is quoted at checkout based on weight and destination.',
-  },
-  {
-    q: 'Can I visit in person?',
-    a: 'We are primarily mail-order, but local collection from Bromsgrove can be arranged for orders over £500. Contact support to arrange.',
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'Card (via Stripe), PayPal, and Klarna for orders over £100. All payments are encrypted and we never see your full card number.',
-  },
-  {
-    q: 'Who is my builder?',
-    a: 'After your order ships, your account shows the builder assigned. You can also message them directly through your order page for spec questions.',
-  },
-];
+// Demo data — replaced by CMS in production.
+const data = {
+  categories: [
+    {
+      slug: 'orders-delivery',
+      name: 'Orders & delivery',
+      articleCount: 14,
+      intro:
+        'Tracking, timings, missed parcels, and what happens between your order and your doorstep.',
+    },
+    {
+      slug: 'returns-refunds',
+      name: 'Returns & refunds',
+      articleCount: 9,
+      intro:
+        'How to start a return, refund windows, restocking fees, and faulty unit procedure.',
+    },
+    {
+      slug: 'warranty-repairs',
+      name: 'Warranty & repairs',
+      articleCount: 11,
+      intro: 'What\u2019s covered, how to claim, AV Care excess, and loan units.',
+    },
+    {
+      slug: 'av-care',
+      name: 'AV Care subscription',
+      articleCount: 8,
+      intro: 'Tiers, pricing, registering your products, claims, cancelling.',
+    },
+    {
+      slug: 'build-specs',
+      name: 'Builds & specifications',
+      articleCount: 17,
+      intro:
+        'Custom configurations, upgrade paths, part compatibility, serial numbers.',
+    },
+    {
+      slug: 'account-security',
+      name: 'Account & security',
+      articleCount: 10,
+      intro: 'Passkeys, two-factor, email changes, closing your account.',
+    },
+    {
+      slug: 'payments-billing',
+      name: 'Payments & billing',
+      articleCount: 7,
+      intro: 'Cards, PayPal, Klarna, Clearpay, invoice terms, VAT receipts.',
+    },
+    {
+      slug: 'business-trade',
+      name: 'Business & trade',
+      articleCount: 6,
+      intro: 'Purchase orders, net-30 terms, bulk quotes, procurement contacts.',
+    },
+  ],
+  popular: [
+    {
+      slug: 'how-long-does-a-custom-build-take',
+      title: 'How long does a custom build take?',
+      category: 'Builds & specifications',
+      reads: 12840,
+    },
+    {
+      slug: 'what-does-av-care-actually-cover',
+      title: 'What does AV Care actually cover?',
+      category: 'AV Care subscription',
+      reads: 9421,
+    },
+    {
+      slug: 'where-is-my-order',
+      title: 'Where is my order?',
+      category: 'Orders & delivery',
+      reads: 8903,
+    },
+    {
+      slug: 'start-a-return',
+      title: 'Start a return',
+      category: 'Returns & refunds',
+      reads: 7712,
+    },
+    {
+      slug: 'register-a-product-for-av-care',
+      title: 'Register a product for AV Care',
+      category: 'AV Care subscription',
+      reads: 6480,
+    },
+    {
+      slug: 'enrol-a-passkey',
+      title: 'Enrol a passkey on your account',
+      category: 'Account & security',
+      reads: 5219,
+    },
+  ],
+};
 
 export default function HelpPage() {
   return (
-    <>
-      <PageHero
-        eyebrow="Help centre"
-        title="The answers you came for."
-        lead="Most questions are answered below. If yours is not, start a chat bottom-right or raise a ticket."
-      />
-      <section className="mx-auto max-w-4xl px-6 pb-24">
-        <div className="space-y-3">
-          {FAQS.map((f) => (
-            <details
-              key={f.q}
-              className="group rounded-lg border border-ink-300/60 bg-white/60 p-6 backdrop-blur-sm transition-colors hover:border-brand-green/40 open:border-brand-green/40 dark:border-obsidian-500/60 dark:bg-obsidian-900/60"
+    <div className="min-h-screen bg-paper font-sans text-ink">
+      {/* ---- hero ---- */}
+      <section className="bav-fade mx-auto max-w-page px-12 pb-[72px] pt-32">
+        <div className="grid gap-12" style={{ gridTemplateColumns: '4fr 8fr' }}>
+          <div>
+            <div className="bav-label text-ink-60">— Help centre</div>
+            <div className="bav-label mt-3.5 text-ink-30">97 articles</div>
+          </div>
+          <div>
+            <h1
+              className="m-0 font-display font-light text-ink"
+              style={{
+                fontSize: 'clamp(44px, 6vw, 88px)',
+                lineHeight: 1.02,
+                letterSpacing: '-0.02em',
+              }}
             >
-              <summary className="flex cursor-pointer items-start justify-between gap-6 font-display text-h3 font-semibold tracking-[-0.015em]">
-                <span>{f.q}</span>
-                <span
-                  aria-hidden
-                  className="mt-1 text-ink-500 transition-transform duration-420 group-open:rotate-45"
-                >
-                  +
-                </span>
-              </summary>
-              <p className="mt-4 text-body text-ink-700 dark:text-ink-300">{f.a}</p>
-            </details>
-          ))}
+              How can we <span className="bav-italic">help</span>.
+            </h1>
+            <p
+              className="mt-7 text-ink-60"
+              style={{ fontSize: 18, lineHeight: 1.55, maxWidth: 560 }}
+            >
+              Answers to the things most people write in about. If nothing here
+              resolves it, the chat widget is routed to a human within working
+              hours, and to AV Care triage overnight.
+            </p>
+
+            {/* search */}
+            <HelpSearch />
+          </div>
+        </div>
+      </section>
+
+      {/* ---- category grid ---- */}
+      <section className="mx-auto max-w-page px-12 pb-[72px]">
+        <div
+          className="mb-8 grid gap-12"
+          style={{ gridTemplateColumns: '4fr 8fr' }}
+        >
+          <div className="bav-label text-ink-60">— Browse by subject</div>
+          <div />
         </div>
 
-        <GlassCard className="mt-10 flex flex-col items-start gap-4 p-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="font-display text-h3 font-semibold tracking-[-0.02em]">Still stuck?</h3>
-            <p className="mt-1 text-small text-ink-500 dark:text-ink-300">Start a chat with the team bottom-right.</p>
-          </div>
-          <Link href="/contact"><Button>Contact the team</Button></Link>
-        </GlassCard>
+        <div className="help-grid">
+          {data.categories.map((cat, i) => (
+            <Link
+              key={cat.slug}
+              href={`/help/${cat.slug}`}
+              className="help-cat-tile"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="bav-label text-ink-30">
+                  №{String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="bav-label font-mono text-ink-30">
+                  {cat.articleCount} articles
+                </span>
+              </div>
+              <h3
+                className="font-display font-light text-ink"
+                style={{
+                  fontSize: 28,
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.01em',
+                  marginTop: 48,
+                  marginBottom: 16,
+                }}
+              >
+                {cat.name}
+              </h3>
+              <p
+                className="m-0 text-ink-60"
+                style={{ fontSize: 14, lineHeight: 1.55, minHeight: 66 }}
+              >
+                {cat.intro}
+              </p>
+              <div className="mt-8">
+                <span className="bav-underline bav-label text-ink">
+                  Read articles <span className="arrow">→</span>
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
-    </>
+
+      {/* ---- popular ---- */}
+      <section className="mx-auto max-w-page px-12 py-[72px]">
+        <div className="grid gap-12" style={{ gridTemplateColumns: '4fr 8fr' }}>
+          <div>
+            <div className="bav-label text-ink-60">— Most read</div>
+            <p
+              className="mt-6 text-ink-60"
+              style={{ fontSize: 14, lineHeight: 1.55, maxWidth: 260 }}
+            >
+              Read counts are rolling 90-day, updated nightly. Useful as a rough
+              signal of where people are looking; not a substitute for asking us
+              directly.
+            </p>
+          </div>
+
+          <div>
+            {data.popular.map((art, i) => (
+              <Link
+                key={art.slug}
+                href={`/help/${art.slug}`}
+                className="help-popular-row"
+              >
+                <span className="bav-label font-mono text-ink-30">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span
+                  className="font-display font-light text-ink"
+                  style={{ fontSize: 22, lineHeight: 1.2 }}
+                >
+                  {art.title}
+                </span>
+                <span className="bav-label cat text-ink-60">{art.category}</span>
+                <span className="bav-label reads text-right font-mono text-ink-30">
+                  {art.reads.toLocaleString('en-GB')} reads
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---- contact strip ---- */}
+      <section className="mt-[72px] border-t border-ink-10 bg-paper-2">
+        <div
+          className="mx-auto grid max-w-page gap-12 px-12 py-24"
+          style={{ gridTemplateColumns: '4fr 8fr' }}
+        >
+          <div>
+            <div className="bav-label text-ink-60">— Still stuck</div>
+            <div className="mt-6 inline-flex items-center gap-2.5">
+              <span className="bav-pulse" />
+              <span className="bav-label text-ink-60">Chat is online</span>
+            </div>
+          </div>
+
+          <div>
+            <h2
+              className="m-0 font-display font-light text-ink"
+              style={{
+                fontSize: 'clamp(36px, 4.5vw, 64px)',
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Write to us <span className="bav-italic">directly</span>.
+            </h2>
+            <p
+              className="mt-6 text-ink-60"
+              style={{ fontSize: 17, lineHeight: 1.55, maxWidth: 620 }}
+            >
+              The chat widget routes first to our AI agent, which resolves most
+              order, returns, and spec questions on its own. Anything it
+              can&rsquo;t handle escalates to the support team, with your
+              message and the context already attached. Median response time to
+              a human is 7 minutes during working hours.
+            </p>
+
+            <div
+              className="mt-12 grid border-l border-t border-ink-10"
+              style={{ gridTemplateColumns: '1fr 1fr' }}
+            >
+              <Link
+                href="/support"
+                className="block border-b border-r border-ink-10 text-inherit no-underline"
+                style={{ padding: '36px 32px' }}
+              >
+                <div className="bav-label text-ink-30">Start a chat</div>
+                <div
+                  className="mt-5 font-display font-light text-ink"
+                  style={{ fontSize: 22 }}
+                >
+                  Chat with support
+                </div>
+                <div
+                  className="mt-3 font-mono text-ink-60"
+                  style={{ fontSize: 12 }}
+                >
+                  Mon–Fri · 08:00–18:00 GMT
+                </div>
+              </Link>
+              <a
+                href="mailto:hello@birminghamav.co.uk"
+                className="block border-b border-r border-ink-10 text-inherit no-underline"
+                style={{ padding: '36px 32px' }}
+              >
+                <div className="bav-label text-ink-30">Email</div>
+                <div
+                  className="mt-5 font-display font-light text-ink"
+                  style={{ fontSize: 22 }}
+                >
+                  hello@birminghamav.co.uk
+                </div>
+                <div
+                  className="mt-3 font-mono text-ink-60"
+                  style={{ fontSize: 12 }}
+                >
+                  Replies within 24 hours
+                </div>
+              </a>
+              <a
+                href="tel:+441214960000"
+                className="block border-b border-r border-ink-10 text-inherit no-underline"
+                style={{ padding: '36px 32px' }}
+              >
+                <div className="bav-label text-ink-30">Phone</div>
+                <div
+                  className="mt-5 font-mono font-light text-ink"
+                  style={{ fontSize: 22 }}
+                >
+                  0121 496 0000
+                </div>
+                <div
+                  className="mt-3 font-mono text-ink-60"
+                  style={{ fontSize: 12 }}
+                >
+                  Mon–Fri · 09:00–17:00 GMT
+                </div>
+              </a>
+              <Link
+                href="/contact"
+                className="block border-b border-r border-ink-10 text-inherit no-underline"
+                style={{ padding: '36px 32px' }}
+              >
+                <div className="bav-label text-ink-30">In writing</div>
+                <div
+                  className="mt-5 font-display font-light text-ink"
+                  style={{ fontSize: 22 }}
+                >
+                  Post & addresses
+                </div>
+                <div
+                  className="mt-3 font-mono text-ink-60"
+                  style={{ fontSize: 12 }}
+                >
+                  Birmingham B16 · returns & trade
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
