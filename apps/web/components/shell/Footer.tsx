@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PaymentMethods, DeliveryPartners } from './PaymentMethods';
 
 type FooterProps = {
   activeBuilds?: number;
@@ -86,11 +87,18 @@ export function Footer({ activeBuilds = 0, version = 'v0.1.0' }: FooterProps) {
           ))}
         </div>
 
-        <div className="grid gap-5 border-t border-ink-10 pt-8">
+        <div className="grid gap-6 border-t border-ink-10 pt-8">
           <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="bav-label text-ink-60">
-              Visa · Mastercard · Amex · PayPal · Apple Pay · Google Pay · Klarna · Clearpay
+            <div className="flex flex-col gap-3">
+              <span className="bav-label text-ink-60">— We accept</span>
+              <PaymentMethods />
             </div>
+            <div className="flex flex-col gap-3">
+              <span className="bav-label text-ink-60">— Delivery partners</span>
+              <DeliveryPartners />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-6 border-t border-ink-10 pt-6">
             <div className="flex flex-wrap gap-5">
               {LEGAL.map((item) => (
                 <Link
@@ -102,11 +110,9 @@ export function Footer({ activeBuilds = 0, version = 'v0.1.0' }: FooterProps) {
                 </Link>
               ))}
             </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="bav-label text-ink-60">© 2026 Birmingham AV Ltd · Reg. No. 12383651</div>
             <div className="bav-label text-ink-30">Built by Mickai™ · {version}</div>
           </div>
+          <div className="bav-label text-ink-60">© 2026 Birmingham AV Ltd · Reg. No. 12383651 · Fazeley Street, Digbeth, Birmingham B5 5RS</div>
         </div>
       </div>
     </footer>
