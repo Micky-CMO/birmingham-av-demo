@@ -6,10 +6,6 @@
  * later bound to a specific build. Every scan writes an immutable
  * `InventoryMovement` audit row so we can trace a component from arrival
  * to dispatch.
- *
- * This module defines the typed service signatures; implementations are
- * filled in alongside the scanner UI (mobile app + tablet on the workshop
- * floor).
  */
 import type {
   Component,
@@ -19,6 +15,7 @@ import type {
   QrBatch,
   QrCode,
 } from '@prisma/client';
+import { prisma } from '@/lib/db';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Component taxonomy
@@ -28,16 +25,20 @@ import type {
  * Return every ComponentType in the taxonomy. Powers dropdowns on the
  * "register component" screen.
  */
-export declare function listComponentTypes(): Promise<ComponentType[]>;
+export async function listComponentTypes(): Promise<ComponentType[]> {
+  return prisma.componentType.findMany({ orderBy: { label: 'asc' } });
+}
 
 /**
  * Insert a new ComponentType. Reserved for admin tooling — the set of
  * codes ("cpu","gpu",…) rarely changes once the workshop is live.
  */
-export declare function createComponentType(input: {
+export async function createComponentType(input: {
   code: string;
   label: string;
-}): Promise<ComponentType>;
+}): Promise<ComponentType> {
+  return prisma.componentType.create({ data: input });
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // QR batches
@@ -54,28 +55,86 @@ export interface CreateQrBatchInput {
   createdBy?: string;
 }
 
+const QR_PAD = 6;
+const pad = (n: number) => n.toString().padStart(QR_PAD, '0');
+
 /**
- * Reserve a new block of QR codes, generate the PDF (A4 sheet ready for a
- * sticker printer), and return the batch plus the URL to the PDF. The
- * `QrCode` rows are pre-created with `componentId = null`; they get
- * claimed on first scan.
+ * Reserve a new block of QR codes. Pre-creates the `QrCode` rows with
+ * `componentId = null`; they get claimed on first scan. PDF generation
+ * is stubbed — returns a placeholder URL for now.
  */
-export declare function createQrBatch(
+export async function createQrBatch(
   input: CreateQrBatchInput,
-): Promise<{ batch: QrBatch; pdfUrl: string }>;
+): Promise<{ batch: QrBatch; pdfUrl: string }> {
+  const prefix = input.prefix ?? 'BAV-INV';
+  const { startNumber, count, createdBy } = input;
+
+  if (count < 1 || count > 500) {
+    throw new Error('count must be between 1 and 500');
+  }
+  if (startNumber < 1) {
+    throw new Error('startNumber must be >= 1');
+  }
+
+  // TODO: generate PDF via jsPDF or similar — returning a placeholder URL
+  // for now. When PDF generation lands, write to S3/Vercel Blob and stamp
+  // the URL on the batch row.
+  const pdfUrl = `/admin/inventory/qr/${startNumber}-${count}.pdf`;
+
+  const batch = await prisma.$transaction(async (tx) => {
+    const newBatch = await tx.qrBatch.create({
+      data: {
+        prefix,
+        startNumber,
+        count,
+        pdfUrl,
+        createdBy: createdBy ?? null,
+      },
+    });
+    const rows = Array.from({ length: count }, (_, i) => ({
+      qrId: `${prefix}-${pad(startNumber + i)}`,
+      batchId: newBatch.batchId,
+    }));
+    await tx.qrCode.createMany({ data: rows, skipDuplicates: true });
+    return newBatch;
+  });
+
+  return { batch, pdfUrl };
+}
 
 /**
  * List printed batches in reverse-chronological order for the inventory
  * admin dashboard.
  */
-export declare function listQrBatches(limit?: number): Promise<QrBatch[]>;
+export async function listQrBatches(limit = 20): Promise<QrBatch[]> {
+  return prisma.qrBatch.findMany({
+    orderBy: { printedAt: 'desc' },
+    take: limit,
+  });
+}
+
+/**
+ * Return the next start number to use when creating a batch — scans the
+ * highest numeric suffix among existing QR codes for the same prefix.
+ */
+export async function nextStartNumber(prefix = 'BAV-INV'): Promise<number> {
+  const last = await prisma.qrCode.findMany({
+    where: { qrId: { startsWith: `${prefix}-` } },
+    orderBy: { qrId: 'desc' },
+    take: 1,
+    select: { qrId: true },
+  });
+  if (last.length === 0) return 1;
+  const tail = last[0]!.qrId.split('-').pop() ?? '';
+  const n = Number.parseInt(tail, 10);
+  return Number.isFinite(n) ? n + 1 : 1;
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Component registration + scanning
 // ─────────────────────────────────────────────────────────────────────────
 
 export interface RegisterComponentInput {
-  /** The QR id scanned from the sticker (e.g. "BAV-INV-000127"). */
   qrId: string;
   componentTypeCode: string;
   manufacturer?: string;
@@ -85,9 +144,7 @@ export interface RegisterComponentInput {
   costGbp?: number;
   supplier?: string;
   notes?: string;
-  /** Scan location — e.g. bin / shelf / workbench. */
   initialLocation?: string;
-  /** User performing the scan (builder or admin). */
   actorId?: string;
 }
 
@@ -96,18 +153,69 @@ export interface RegisterComponentInput {
  * write an `InventoryMovement` with action=`registered`. Throws if the QR
  * is already bound to a different component.
  */
-export declare function registerComponent(
+export async function registerComponent(
   input: RegisterComponentInput,
-): Promise<{ component: Component; qr: QrCode; movement: InventoryMovement }>;
+): Promise<{ component: Component; qr: QrCode; movement: InventoryMovement }> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({ where: { qrId: input.qrId } });
+    if (!qr) throw new Error(`QR ${input.qrId} not found`);
+    if (qr.componentId) throw new Error(`QR ${input.qrId} already claimed`);
+
+    const type = await tx.componentType.findUnique({
+      where: { code: input.componentTypeCode },
+    });
+    if (!type) throw new Error(`Unknown component type: ${input.componentTypeCode}`);
+
+    const component = await tx.component.create({
+      data: {
+        componentTypeId: type.componentTypeId,
+        manufacturer: input.manufacturer ?? null,
+        model: input.model ?? null,
+        serialNumber: input.serialNumber || null,
+        conditionGrade: input.conditionGrade ?? null,
+        costGbp: input.costGbp ?? null,
+        supplier: input.supplier ?? null,
+        notes: input.notes ?? null,
+        currentLocation: input.initialLocation ?? null,
+      },
+    });
+
+    const updatedQr = await tx.qrCode.update({
+      where: { qrId: input.qrId },
+      data: { componentId: component.componentId, claimedAt: new Date() },
+    });
+
+    const movement = await tx.inventoryMovement.create({
+      data: {
+        componentId: component.componentId,
+        qrId: input.qrId,
+        action: 'registered',
+        toLocation: input.initialLocation ?? null,
+        actorId: input.actorId ?? null,
+        notes: input.notes ?? null,
+      },
+    });
+
+    return { component, qr: updatedQr, movement };
+  });
+}
 
 /**
  * Look up the component currently bound to a scanned QR — used by the
  * scanner UI to show "what is this?" before any action.
  */
-export declare function lookupByQr(qrId: string): Promise<{
+export async function lookupByQr(qrId: string): Promise<{
   qr: QrCode;
   component: Component | null;
-}>;
+}> {
+  const qr = await prisma.qrCode.findUnique({
+    where: { qrId },
+    include: { component: true },
+  });
+  if (!qr) throw new Error(`QR ${qrId} not found`);
+  const { component, ...rest } = qr;
+  return { qr: rest as QrCode, component: component ?? null };
+}
 
 export interface MoveComponentInput {
   qrId: string;
@@ -117,11 +225,35 @@ export interface MoveComponentInput {
 }
 
 /**
- * Record a location change for the component (bench → shelf, etc). Updates
- * `currentLocation` on the component and writes a movement with
- * action=`moved`.
+ * Record a location change for the component (bench → shelf, etc).
  */
-export declare function moveComponent(input: MoveComponentInput): Promise<InventoryMovement>;
+export async function moveComponent(
+  input: MoveComponentInput,
+): Promise<InventoryMovement> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({
+      where: { qrId: input.qrId },
+      include: { component: true },
+    });
+    if (!qr?.component) throw new Error(`QR ${input.qrId} has no component`);
+    const from = qr.component.currentLocation;
+    await tx.component.update({
+      where: { componentId: qr.component.componentId },
+      data: { currentLocation: input.toLocation },
+    });
+    return tx.inventoryMovement.create({
+      data: {
+        componentId: qr.component.componentId,
+        qrId: input.qrId,
+        action: 'moved',
+        fromLocation: from,
+        toLocation: input.toLocation,
+        actorId: input.actorId ?? null,
+        notes: input.notes ?? null,
+      },
+    });
+  });
+}
 
 export interface BindComponentToBuildInput {
   qrId: string;
@@ -131,46 +263,128 @@ export interface BindComponentToBuildInput {
 }
 
 /**
- * Bind a component to a specific Unit (build-in-progress). Sets
- * `Component.boundToUnitId`, writes a movement with action=`bound_to_build`,
- * and stamps the component location as the unit's chassis. Throws if the
- * component is already bound to a different unit.
+ * Bind a component to a specific Unit (build-in-progress).
  */
-export declare function bindComponentToBuild(
+export async function bindComponentToBuild(
   input: BindComponentToBuildInput,
-): Promise<InventoryMovement>;
+): Promise<InventoryMovement> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({
+      where: { qrId: input.qrId },
+      include: { component: true },
+    });
+    if (!qr?.component) throw new Error(`QR ${input.qrId} has no component`);
+    if (qr.component.boundToUnitId && qr.component.boundToUnitId !== input.unitId) {
+      throw new Error('component is already bound to a different unit');
+    }
+    await tx.component.update({
+      where: { componentId: qr.component.componentId },
+      data: { boundToUnitId: input.unitId },
+    });
+    return tx.inventoryMovement.create({
+      data: {
+        componentId: qr.component.componentId,
+        qrId: input.qrId,
+        action: 'bound_to_build',
+        fromLocation: qr.component.currentLocation,
+        toLocation: `unit:${input.unitId}`,
+        actorId: input.actorId ?? null,
+        notes: input.notes ?? null,
+      },
+    });
+  });
+}
 
 /**
- * Release a component from its current unit — used when a build is
- * cancelled or a wrong part was scanned. Clears `boundToUnitId` and logs
- * action=`unbound`.
+ * Release a component from its current unit.
  */
-export declare function unbindComponent(input: {
+export async function unbindComponent(input: {
   qrId: string;
   actorId?: string;
   notes?: string;
-}): Promise<InventoryMovement>;
+}): Promise<InventoryMovement> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({
+      where: { qrId: input.qrId },
+      include: { component: true },
+    });
+    if (!qr?.component) throw new Error(`QR ${input.qrId} has no component`);
+    await tx.component.update({
+      where: { componentId: qr.component.componentId },
+      data: { boundToUnitId: null },
+    });
+    return tx.inventoryMovement.create({
+      data: {
+        componentId: qr.component.componentId,
+        qrId: input.qrId,
+        action: 'unbound',
+        fromLocation: qr.component.boundToUnitId ? `unit:${qr.component.boundToUnitId}` : null,
+        actorId: input.actorId ?? null,
+        notes: input.notes ?? null,
+      },
+    });
+  });
+}
 
 /**
- * Mark a component as written off (DOA from supplier, damaged in handling,
- * etc). Terminal — component is excluded from future build bindings.
+ * Mark a component as written off (DOA from supplier, damaged in handling, …).
  */
-export declare function writeOffComponent(input: {
+export async function writeOffComponent(input: {
   qrId: string;
   actorId?: string;
   reason: string;
-}): Promise<InventoryMovement>;
+}): Promise<InventoryMovement> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({
+      where: { qrId: input.qrId },
+      include: { component: true },
+    });
+    if (!qr?.component) throw new Error(`QR ${input.qrId} has no component`);
+    return tx.inventoryMovement.create({
+      data: {
+        componentId: qr.component.componentId,
+        qrId: input.qrId,
+        action: 'written_off',
+        actorId: input.actorId ?? null,
+        notes: input.reason,
+      },
+    });
+  });
+}
 
 /**
- * Put a component back into general stock after an unbind or return. Logs
- * action=`returned_to_stock` with the destination location.
+ * Put a component back into general stock after an unbind or return.
  */
-export declare function returnToStock(input: {
+export async function returnToStock(input: {
   qrId: string;
   toLocation: string;
   actorId?: string;
   notes?: string;
-}): Promise<InventoryMovement>;
+}): Promise<InventoryMovement> {
+  return prisma.$transaction(async (tx) => {
+    const qr = await tx.qrCode.findUnique({
+      where: { qrId: input.qrId },
+      include: { component: true },
+    });
+    if (!qr?.component) throw new Error(`QR ${input.qrId} has no component`);
+    const from = qr.component.currentLocation;
+    await tx.component.update({
+      where: { componentId: qr.component.componentId },
+      data: { currentLocation: input.toLocation, boundToUnitId: null },
+    });
+    return tx.inventoryMovement.create({
+      data: {
+        componentId: qr.component.componentId,
+        qrId: input.qrId,
+        action: 'returned_to_stock',
+        fromLocation: from,
+        toLocation: input.toLocation,
+        actorId: input.actorId ?? null,
+        notes: input.notes ?? null,
+      },
+    });
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Queries / audit
@@ -178,10 +392,12 @@ export declare function returnToStock(input: {
 
 export interface ListComponentsFilter {
   typeCode?: string;
+  typeCodes?: string[];
   supplier?: string;
-  /** Only components currently in the given location. */
   location?: string;
-  /** If true, only components not yet bound to a unit. */
+  locations?: string[];
+  conditions?: string[];
+  query?: string;
   unboundOnly?: boolean;
   limit?: number;
   offset?: number;
@@ -190,27 +406,76 @@ export interface ListComponentsFilter {
 /**
  * Paginated search over components — powers the "stock on hand" screen.
  */
-export declare function listComponents(
-  filter?: ListComponentsFilter,
-): Promise<{ items: Component[]; total: number }>;
+export async function listComponents(
+  filter: ListComponentsFilter = {},
+): Promise<{ items: (Component & { type: ComponentType; qrCodes: QrCode[] })[]; total: number }> {
+  const take = filter.limit ?? 48;
+  const skip = filter.offset ?? 0;
+  const where: Record<string, unknown> = {};
+
+  if (filter.typeCode) {
+    where.type = { code: filter.typeCode };
+  } else if (filter.typeCodes && filter.typeCodes.length > 0) {
+    where.type = { code: { in: filter.typeCodes } };
+  }
+  if (filter.supplier) where.supplier = filter.supplier;
+  if (filter.location) where.currentLocation = filter.location;
+  else if (filter.locations && filter.locations.length > 0) {
+    where.currentLocation = { in: filter.locations };
+  }
+  if (filter.conditions && filter.conditions.length > 0) {
+    where.conditionGrade = { in: filter.conditions };
+  }
+  if (filter.unboundOnly) where.boundToUnitId = null;
+  if (filter.query) {
+    const q = filter.query.trim();
+    where.OR = [
+      { manufacturer: { contains: q, mode: 'insensitive' } },
+      { model: { contains: q, mode: 'insensitive' } },
+      { serialNumber: { contains: q, mode: 'insensitive' } },
+      { qrCodes: { some: { qrId: { contains: q, mode: 'insensitive' } } } },
+    ];
+  }
+
+  const [total, items] = await Promise.all([
+    prisma.component.count({ where }),
+    prisma.component.findMany({
+      where,
+      include: { type: true, qrCodes: { take: 1 } },
+      orderBy: { createdAt: 'desc' },
+      take,
+      skip,
+    }),
+  ]);
+
+  return { items, total };
+}
 
 /**
- * Full audit trail for a single component — every scan, every move, every
- * bind/unbind. Newest first.
+ * Full audit trail for a single component — every scan, every move.
  */
-export declare function getComponentHistory(componentId: string): Promise<InventoryMovement[]>;
+export async function getComponentHistory(
+  componentId: string,
+): Promise<InventoryMovement[]> {
+  return prisma.inventoryMovement.findMany({
+    where: { componentId },
+    orderBy: { occurredAt: 'desc' },
+  });
+}
 
 /**
- * List every component bound to a given unit. Populates the build card on
- * the builder workbench.
+ * List every component bound to a given unit.
  */
-export declare function listComponentsForUnit(unitId: string): Promise<Component[]>;
+export async function listComponentsForUnit(unitId: string): Promise<Component[]> {
+  return prisma.component.findMany({
+    where: { boundToUnitId: unitId },
+  });
+}
 
 /**
- * Arbitrary audit-trail append — escape hatch for actions that do not fit
- * the helpers above. Prefer the named helpers when possible.
+ * Arbitrary audit-trail append — escape hatch.
  */
-export declare function recordMovement(input: {
+export async function recordMovement(input: {
   componentId: string;
   qrId: string;
   action: InventoryAction;
@@ -218,4 +483,16 @@ export declare function recordMovement(input: {
   toLocation?: string;
   actorId?: string;
   notes?: string;
-}): Promise<InventoryMovement>;
+}): Promise<InventoryMovement> {
+  return prisma.inventoryMovement.create({
+    data: {
+      componentId: input.componentId,
+      qrId: input.qrId,
+      action: input.action,
+      fromLocation: input.fromLocation ?? null,
+      toLocation: input.toLocation ?? null,
+      actorId: input.actorId ?? null,
+      notes: input.notes ?? null,
+    },
+  });
+}
