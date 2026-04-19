@@ -294,6 +294,117 @@ export async function getLowStockAlerts(): Promise<StockAlert[]> {
   }));
 }
 
+// --- Extended KPIs for artefact 35 dashboard (revenue rollups + flags) ---
+
+export type ExtendedKPIs = {
+  revenueToday: { value: number; deltaPct: number };
+  revenueWeek: { value: number; deltaPct: number };
+  revenueMonth: { value: number; deltaPct: number };
+  ordersToday: { value: number; deltaPct: number };
+  flaggedReturns: { value: number };
+  openTickets: { value: number };
+  activeBuilds: { value: number };
+};
+
+export async function getExtendedDashboardKpis(): Promise<ExtendedKPIs> {
+  const now = Date.now();
+  const startDay = new Date(now - DAY);
+  const startPrevDay = new Date(now - 2 * DAY);
+  const startWeek = new Date(now - 7 * DAY);
+  const startPrevWeek = new Date(now - 14 * DAY);
+  const startMonth = new Date(now - 30 * DAY);
+  const startPrevMonth = new Date(now - 60 * DAY);
+
+  const [
+    revDay,
+    revPrevDay,
+    revWeek,
+    revPrevWeek,
+    revMonth,
+    revPrevMonth,
+    ordDay,
+    ordPrevDay,
+    flaggedReturns,
+    openTickets,
+    activeBuilds,
+  ] = await Promise.all([
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startDay } }, _sum: { totalGbp: true } }),
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startPrevDay, lt: startDay } }, _sum: { totalGbp: true } }),
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startWeek } }, _sum: { totalGbp: true } }),
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startPrevWeek, lt: startWeek } }, _sum: { totalGbp: true } }),
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startMonth } }, _sum: { totalGbp: true } }),
+    prisma.order.aggregate({ where: { status: { not: 'draft' }, createdAt: { gte: startPrevMonth, lt: startMonth } }, _sum: { totalGbp: true } }),
+    prisma.order.count({ where: { status: { not: 'draft' }, createdAt: { gte: startDay } } }),
+    prisma.order.count({ where: { status: { not: 'draft' }, createdAt: { gte: startPrevDay, lt: startDay } } }),
+    prisma.return.count({ where: { aiFlaggedPattern: { not: null }, status: { not: 'resolved' } } }),
+    prisma.supportTicket.count({ where: { status: { in: ['open', 'ai_handling', 'awaiting_customer'] } } }),
+    prisma.buildQueue.count({ where: { status: { in: ['queued', 'in_progress'] } } }),
+  ]);
+
+  return {
+    revenueToday: {
+      value: Number(revDay._sum.totalGbp ?? 0),
+      deltaPct: pctChange(Number(revDay._sum.totalGbp ?? 0), Number(revPrevDay._sum.totalGbp ?? 0)),
+    },
+    revenueWeek: {
+      value: Number(revWeek._sum.totalGbp ?? 0),
+      deltaPct: pctChange(Number(revWeek._sum.totalGbp ?? 0), Number(revPrevWeek._sum.totalGbp ?? 0)),
+    },
+    revenueMonth: {
+      value: Number(revMonth._sum.totalGbp ?? 0),
+      deltaPct: pctChange(Number(revMonth._sum.totalGbp ?? 0), Number(revPrevMonth._sum.totalGbp ?? 0)),
+    },
+    ordersToday: { value: ordDay, deltaPct: pctChange(ordDay, ordPrevDay) },
+    flaggedReturns: { value: flaggedReturns },
+    openTickets: { value: openTickets },
+    activeBuilds: { value: activeBuilds },
+  };
+}
+
+// --- Live build queue (artefact 35) ---
+
+export type BuildQueueItem = {
+  buildNumber: string;
+  orderNumber: string;
+  product: string;
+  builder: { displayName: string; builderCode: string };
+  status: string;
+  stageLabel: string;
+  minutesIn: number;
+};
+
+export async function getActiveBuildQueue(limit = 6): Promise<BuildQueueItem[]> {
+  const rows = await prisma.buildQueue.findMany({
+    where: { status: { in: ['queued', 'in_progress'] } },
+    orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+    take: limit,
+    include: {
+      order: { select: { orderNumber: true } },
+      builder: { select: { displayName: true, builderCode: true } },
+    },
+  });
+  return rows.map((r, idx) => {
+    const itemTitle = Array.isArray(r.items) && r.items.length > 0 && typeof r.items[0] === 'object'
+      ? (r.items[0] as { title?: string }).title ?? 'Custom build'
+      : 'Custom build';
+    const minutesIn = r.startedAt
+      ? Math.max(0, Math.round((Date.now() - r.startedAt.getTime()) / 60_000))
+      : r.estimatedMinutes ?? 0;
+    return {
+      buildNumber: `№${200 - idx}`,
+      orderNumber: r.order.orderNumber,
+      product: itemTitle,
+      builder: {
+        displayName: r.builder.displayName,
+        builderCode: r.builder.builderCode,
+      },
+      status: r.status === 'in_progress' ? 'in_build' : r.status,
+      stageLabel: r.status === 'in_progress' ? 'On the floor' : 'Awaiting parts',
+      minutesIn,
+    };
+  });
+}
+
 // --- Geography (where orders ship) ---
 
 export type CityCount = { city: string; orders: number };
