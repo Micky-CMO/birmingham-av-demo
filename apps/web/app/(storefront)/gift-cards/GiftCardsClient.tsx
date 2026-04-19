@@ -123,25 +123,25 @@ export function GiftCardsClient() {
           </div>
 
           <div
-            className="bav-canvas flex flex-col p-12"
-            style={{ aspectRatio: '4 / 3', position: 'relative' }}
+            className="relative overflow-hidden rounded-[8px] bg-white shadow-[0_24px_60px_rgba(10,10,10,0.12)]"
+            style={{ aspectRatio: '3 / 2' }}
           >
-            <div className="bav-label relative z-[1] text-ink-60">— Birmingham AV</div>
-            <div className="relative z-[1] flex flex-1 items-center justify-center">
-              <div
-                className="bav-italic font-display font-light leading-none"
-                style={{
-                  fontSize: 'clamp(80px, 12vw, 180px)',
-                  color: 'rgba(23,20,15,0.9)',
-                }}
-              >
-                {effectiveAmount ? `£${effectiveAmount}` : '£—'}
+            <img
+              src="/brand/gift-card.png"
+              alt="Birmingham AV gift card"
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+            {effectiveAmount > 0 && (
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-white/95 via-white/80 to-transparent px-6 pb-5 pt-14">
+                <div
+                  className="bav-italic font-display font-light leading-none text-ink"
+                  style={{ fontSize: 'clamp(40px, 6vw, 72px)' }}
+                >
+                  £{effectiveAmount.toLocaleString('en-GB')}
+                </div>
+                <div className="bav-label text-ink-60">— Digital delivery</div>
               </div>
-            </div>
-            <div className="relative z-[1] flex items-end justify-between">
-              <div className="bav-label text-ink-60">XXXX · XXXX · XXXX · XXXX</div>
-              <div className="text-[11px] italic text-ink-30">preview</div>
-            </div>
+            )}
           </div>
         </div>
 

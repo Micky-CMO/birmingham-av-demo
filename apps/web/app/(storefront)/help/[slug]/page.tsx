@@ -233,35 +233,40 @@ const ARTICLES: Record<string, Article> = {
       {
         kind: 'p',
         text:
-          'AV Care is a monthly subscription that extends and broadens the standard twelve-month warranty. It is not insurance; it is a maintenance contract, and the line between the two matters.',
+          'AV Care is a subscription that sits on top of the standard twelve-month manufacturer warranty. It covers what the warranty doesn\u2019t, and keeps covering long after year one. Two tiers: Essential (£14.99/mo or £149/yr) and Plus (£29.99/mo or £299/yr). £100 excess per claim. 30-day free trial.',
       },
-      { kind: 'h2', id: 'included', text: 'What\u2019s included' },
+      { kind: 'h2', id: 'essential', text: 'Essential' },
       {
         kind: 'list',
         items: [
-          [
-            'Extended warranty',
-            'Parts and labour cover beyond the standard year, for as long as the subscription is active.',
-          ],
-          [
-            'Priority queue',
-            'Repairs and replacement dispatches jump the standard queue.',
-          ],
-          [
-            'Loan unit',
-            'A loan machine shipped within one working day of a qualifying fault being accepted.',
-          ],
-          [
-            'Annual service',
-            'Dust-out, paste refresh, fan check, and BIOS update. You post it in; we cover both ways.',
-          ],
+          ['Accidental damage', 'Drops, spills, power-surge damage, cracked screens.'],
+          ['Free collection', 'We pay both legs of UK collection and return.'],
+          ['48-hour diagnostic SLA', 'From the moment the unit lands on the bench.'],
+          ['Software support line', 'Driver issues, Windows activation, BIOS flashes, boot repair.'],
+          ['Runs forever while subscribed', 'No 12-month expiry — still covered year 3, year 5.'],
         ],
       },
-      { kind: 'h2', id: 'excluded', text: 'What\u2019s not included' },
+      { kind: 'h2', id: 'plus', text: 'Plus' },
       {
         kind: 'p',
         text:
-          'Physical damage, liquid damage, third-party modifications, and consumables. Accidental damage has its own add-on tier with a per-claim excess documented on /warranty.',
+          'Everything in Essential, with the workshop treating you as priority.',
+      },
+      {
+        kind: 'list',
+        items: [
+          ['Loan device', 'Mid-range laptop or desktop shipped same day your unit is collected.'],
+          ['Cross-shipping', 'Replacement part ships before we receive the faulty one back.'],
+          ['Annual preventative service', 'Thermal repaste, fan clean, burn-in re-test, firmware updates.'],
+          ['Component upgrade offset', 'If the same part isn\u2019t available, we apply 100% of its value toward the next-tier equivalent.'],
+          ['24-hour diagnostic SLA', 'Priority queue. AV Care Plus jobs go first.'],
+        ],
+      },
+      { kind: 'h2', id: 'excluded', text: 'What\u2019s not covered' },
+      {
+        kind: 'p',
+        text:
+          'Theft, intentional damage, cosmetic wear that doesn\u2019t affect function, unauthorised modifications, software licence fees (Windows, Adobe, etc.).',
       },
     ],
     related: [
@@ -275,6 +280,258 @@ const ARTICLES: Record<string, Article> = {
         title: 'Start a return',
         category: 'Returns & refunds',
       },
+    ],
+  },
+  'change-my-delivery-address': {
+    title: 'Change a delivery address',
+    headlinePlain: 'Change a delivery',
+    headlineItalic: 'address',
+    category: { slug: 'orders-delivery', name: 'Orders & delivery' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 2,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'You can change the delivery address yourself up until the order reaches the In build stage. After that, any change has to go through chat so the courier manifest can be reissued.',
+      },
+      { kind: 'h2', id: 'before-build', text: 'Before the build starts' },
+      {
+        kind: 'list',
+        items: [
+          ['Open the order', 'Go to /account/orders and click the order number.'],
+          ['Edit the address', 'If the status is Queued, the address row has an Edit button. Update and save.'],
+          ['Confirmation', 'You\u2019ll get an email confirming the new address inside a minute.'],
+        ],
+      },
+      { kind: 'h2', id: 'after-build', text: 'After the build has started' },
+      {
+        kind: 'p',
+        text:
+          'If the order is already In build or later, message us from the order page. We can re-route to any UK address before dispatch; international address changes after the build has started may trigger a re-invoice for duties.',
+      },
+      { kind: 'h2', id: 'already-shipped', text: 'Already shipped' },
+      {
+        kind: 'p',
+        text:
+          'Once a DPD tracking number is active, use DPD\u2019s own redirect tool via the tracking link on your order page. We can\u2019t amend a parcel already in the courier network, only redirect via the courier\u2019s portal.',
+      },
+    ],
+    related: [
+      { slug: 'where-is-my-order', title: 'Where is my order?', category: 'Orders & delivery' },
+      { slug: 'cancel-an-order', title: 'Cancel an order', category: 'Orders & delivery' },
+    ],
+  },
+  'cancel-an-order': {
+    title: 'Cancel an order',
+    headlinePlain: 'Cancel an',
+    headlineItalic: 'order',
+    category: { slug: 'orders-delivery', name: 'Orders & delivery' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 2,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'Standard stock orders can be cancelled before they\u2019re packed. Custom builds can be cancelled before component staging begins; once parts are pulled for your unit, cancellation becomes a return with any bespoke components refundable less a restocking fee.',
+      },
+      { kind: 'h2', id: 'how', text: 'How to cancel' },
+      {
+        kind: 'list',
+        items: [
+          ['Open the order', 'From /account/orders, click the order you want to cancel.'],
+          ['Cancel button', 'If the order is still cancellable, a Cancel order button is visible. Click it.'],
+          ['Confirm reason', 'Pick a reason (optional). Refund starts immediately.'],
+          ['Refund timing', 'Cards: 3–5 working days. PayPal / Klarna / Clearpay: within 24 hours. Bank transfer: up to 5 working days.'],
+        ],
+      },
+      { kind: 'h2', id: 'cant-cancel', text: 'If the Cancel button isn\u2019t visible' },
+      {
+        kind: 'p',
+        text:
+          'Your order has already progressed past the cancellation window. Open chat from the order page — we\u2019ll offer the closest option, which is either a full return on arrival or, for custom builds mid-assembly, a partial refund on any non-bespoke components.',
+      },
+    ],
+    related: [
+      { slug: 'where-is-my-order', title: 'Where is my order?', category: 'Orders & delivery' },
+      { slug: 'start-a-return', title: 'Start a return', category: 'Returns & refunds' },
+    ],
+  },
+  'register-a-product-for-av-care': {
+    title: 'Register a product for AV Care',
+    headlinePlain: 'Register a product for',
+    headlineItalic: 'AV Care',
+    category: { slug: 'av-care', name: 'AV Care subscription' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 3,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'AV Care is billed per account, not per product. Once you\u2019ve subscribed, every eligible BAV product under your account is covered automatically — no need to register each one individually. This page explains where to see what\u2019s registered and how to add a product bought outside the site.',
+      },
+      { kind: 'h2', id: 'automatic', text: 'What registers automatically' },
+      {
+        kind: 'p',
+        text:
+          'Anything bought through this account since you activated AV Care. Open /account/av-care to see the list of covered items, their build numbers, and the start date of cover.',
+      },
+      { kind: 'h2', id: 'add-external', text: 'Adding a product bought elsewhere' },
+      {
+        kind: 'list',
+        items: [
+          ['Go to /account/av-care', 'Click "Register external product".'],
+          ['Enter the serial number', 'BAV-built products have the build number engraved on the chassis plate or printed on the birth certificate.'],
+          ['Upload proof of purchase', 'A photo of the receipt or original order confirmation. We accept purchases from the eBay store too.'],
+          ['Inspection', 'For non-BAV-built products, we may ask you to ship the unit in for a one-time baseline check before cover activates.'],
+        ],
+      },
+      { kind: 'h2', id: 'cancel-or-pause', text: 'Cancelling or pausing' },
+      {
+        kind: 'p',
+        text:
+          'Cancel any time from /account/av-care. Cover continues to the end of your current billing period. Pause up to 60 days per year if you\u2019re away — pro-rated to the nearest day.',
+      },
+    ],
+    related: [
+      { slug: 'what-does-av-care-actually-cover', title: 'What does AV Care actually cover?', category: 'AV Care subscription' },
+      { slug: 'start-a-return', title: 'Start a return', category: 'Returns & refunds' },
+    ],
+  },
+  'request-a-rush-slot': {
+    title: 'Request a rush build slot',
+    headlinePlain: 'Request a rush build',
+    headlineItalic: 'slot',
+    category: { slug: 'build-specs', name: 'Builds & specifications' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 2,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'Standard turnaround is four to seven working days. Rush slots compress that to two to three, subject to stock and bench availability. Rush is an extra £199 and waives the 24-hour soak test — only appropriate if you need the machine fast and understand the trade-off.',
+      },
+      { kind: 'h2', id: 'availability', text: 'When rush is available' },
+      {
+        kind: 'p',
+        text:
+          'We keep one or two rush slots per week. They clear quickly. Ask in chat before placing the order — the answer is usually within fifteen minutes of a message during working hours.',
+      },
+      { kind: 'h2', id: 'limits', text: 'What we won\u2019t rush' },
+      {
+        kind: 'list',
+        items: [
+          ['Water loops', 'Hard-tubed custom loops need full bench time; we don\u2019t compress them.'],
+          ['Parts on allocation', 'If the GPU or CPU is on distributor allocation, the order waits on stock regardless of rush.'],
+          ['Chassis mods', 'Bespoke chassis work needs its own schedule; rush doesn\u2019t apply.'],
+        ],
+      },
+      {
+        kind: 'callout',
+        title: 'What the rush fee covers',
+        body:
+          'Priority queueing, same-day parts staging, and next-day dispatch instead of queued dispatch. It doesn\u2019t buy a different machine — build quality and QC sign-off are identical.',
+      },
+    ],
+    related: [
+      { slug: 'how-long-does-a-custom-build-take', title: 'How long does a custom build take?', category: 'Builds & specifications' },
+      { slug: 'where-is-my-order', title: 'Where is my order?', category: 'Orders & delivery' },
+    ],
+  },
+  'enrol-a-passkey': {
+    title: 'Enrol a passkey on your account',
+    headlinePlain: 'Enrol a',
+    headlineItalic: 'passkey',
+    category: { slug: 'account-security', name: 'Account & security' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 3,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'Passkeys replace the password with your device\u2019s biometric (Face ID, Touch ID, Windows Hello) or a hardware security key. Safer, faster, no phishing surface. Every account should have at least one.',
+      },
+      { kind: 'h2', id: 'enrol', text: 'Enrol one' },
+      {
+        kind: 'list',
+        items: [
+          ['Go to /account/security', 'Sign in first if you haven\u2019t already.'],
+          ['Click "Add passkey"', 'Your browser or OS will prompt for authentication — Face ID, Touch ID, Windows Hello, or a YubiKey.'],
+          ['Name the passkey', 'e.g. "MacBook Pro" or "Pixel 9". Helps if you later need to revoke one.'],
+          ['Save', 'That\u2019s it. Next time you sign in, pick "Sign in with a passkey" and authenticate.'],
+        ],
+      },
+      { kind: 'h2', id: 'multiple', text: 'Enrol more than one' },
+      {
+        kind: 'p',
+        text:
+          'We recommend at least two passkeys on different devices — one on your phone, one on your laptop. If one device is lost, the other still gets you in without needing a password reset.',
+      },
+      { kind: 'h2', id: 'supported', text: 'What\u2019s supported' },
+      {
+        kind: 'list',
+        items: [
+          ['iOS 16 / macOS Ventura and later', 'Face ID and Touch ID via Safari, Chrome, Firefox, Edge.'],
+          ['Android 9 and later', 'Fingerprint or screen-lock PIN via Chrome, Firefox, Edge.'],
+          ['Windows 10 / 11', 'Windows Hello (face, fingerprint, PIN) via Edge, Chrome, Firefox.'],
+          ['Hardware keys', 'YubiKey 5, Google Titan, Feitian — anything WebAuthn-compliant.'],
+        ],
+      },
+      { kind: 'h2', id: 'lost-device', text: 'Lost your device?' },
+      {
+        kind: 'p',
+        text:
+          'Sign in on a device that still has an enrolled passkey and revoke the lost device\u2019s passkey from /account/security. If no other passkey is enrolled, use the magic-link fallback (email to the address on file) and enrol a fresh passkey immediately.',
+      },
+    ],
+    related: [
+      { slug: 'where-is-my-order', title: 'Where is my order?', category: 'Orders & delivery' },
+    ],
+  },
+  'vat-receipts-and-invoices': {
+    title: 'VAT receipts and invoices',
+    headlinePlain: 'VAT receipts and',
+    headlineItalic: 'invoices',
+    category: { slug: 'payments-billing', name: 'Payments & billing' },
+    lastUpdatedIso: '2026-04-10T10:00:00Z',
+    readMinutes: 2,
+    body: [
+      {
+        kind: 'p',
+        text:
+          'Birmingham AV Ltd is VAT registered (GB 217 8934 12). Every order includes a VAT invoice accessible from the order page. Business accounts can also enable net-30 terms with a separate invoicing flow.',
+      },
+      { kind: 'h2', id: 'download', text: 'Downloading a VAT invoice' },
+      {
+        kind: 'list',
+        items: [
+          ['Open the order', 'From /account/orders, click the order number.'],
+          ['Click "Download VAT invoice"', 'A PDF with itemised VAT, subtotal, and total lands in your downloads.'],
+          ['Order number as reference', 'The PDF filename is BAV-<ordernumber>.pdf; the invoice itself references the same number.'],
+        ],
+      },
+      { kind: 'h2', id: 'business', text: 'Business accounts' },
+      {
+        kind: 'p',
+        text:
+          'Trade accounts get purchase-order support, net-30 payment terms, and consolidated monthly invoicing. Apply at /business — we\u2019ll do a credit check and confirm limits inside two working days.',
+      },
+      { kind: 'h2', id: 'vat-refunds', text: 'VAT refunds on returns' },
+      {
+        kind: 'p',
+        text:
+          'If you return a product and the refund is issued, the VAT portion is refunded automatically in the same transaction. A credit note PDF is issued alongside the refund email.',
+      },
+      { kind: 'h2', id: 'export', text: 'Export orders (outside the UK)' },
+      {
+        kind: 'p',
+        text:
+          'Orders shipped outside the UK are zero-rated for VAT provided the shipping address is outside the UK and valid commercial documentation is generated. Duty and import VAT in the destination country are the buyer\u2019s responsibility.',
+      },
+    ],
+    related: [
+      { slug: 'where-is-my-order', title: 'Where is my order?', category: 'Orders & delivery' },
+      { slug: 'cancel-an-order', title: 'Cancel an order', category: 'Orders & delivery' },
     ],
   },
 };
