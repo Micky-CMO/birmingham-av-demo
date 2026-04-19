@@ -170,6 +170,27 @@ enum ReviewAdminStatus {
   flagged
 }
 
+// ============ Stock alerts (A96) ============
+
+enum StockAlertStatus {
+  pending
+  notified
+  cancelled
+}
+
+// ============ Trade-in (A98) ============
+
+enum TradeInStatus {
+  submitted
+  quoted
+  accepted
+  declined
+  in_transit
+  received
+  paid
+  cancelled
+}
+
 // ============ Core ============
 
 model User {
@@ -218,6 +239,8 @@ model User {
   referralCode        ReferralCode?           @relation("ReferralCodeUser")
   referralsMade       Referral[]              @relation("ReferrerUser")
   referralsReceived   Referral[]              @relation("ReferredUser")
+  stockAlerts         StockAlert[]            @relation("StockAlertUser")
+  tradeInRequests     TradeInRequest[]        @relation("TradeInRequestUser")
 
   @@index([role])
   @@index([deletedAt])
@@ -363,6 +386,7 @@ model Product {
   tickets       SupportTicket[]
   avCareClaims  AvCareClaim[]
   wishlistItems WishlistItem[]
+  stockAlerts   StockAlert[]
 
   @@index([builderId])
   @@index([categoryId])
@@ -1188,4 +1212,49 @@ model Referral {
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@map("referrals")
+}
+
+model StockAlert {
+  stockAlertId String           @id @default(uuid()) @map("stock_alert_id") @db.Uuid
+  userId       String?          @map("user_id") @db.Uuid
+  productId    String           @map("product_id") @db.Uuid
+  email        String
+  status       StockAlertStatus @default(pending)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  notifiedAt   DateTime?        @map("notified_at")
+
+  user    User?   @relation("StockAlertUser", fields: [userId], references: [userId])
+  product Product @relation(fields: [productId], references: [productId], onDelete: Cascade)
+
+  @@unique([productId, email])
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("stock_alerts")
+}
+
+model TradeInRequest {
+  tradeInRequestId String        @id @default(uuid()) @map("trade_in_request_id") @db.Uuid
+  userId           String?       @map("user_id") @db.Uuid
+  email            String
+  contactName      String        @map("contact_name")
+  phone            String?
+  itemType         String        @map("item_type")
+  brand            String
+  model            String
+  condition        String
+  estimateGbp      Decimal       @default(0) @map("estimate_gbp") @db.Decimal(10, 2)
+  offerGbp         Decimal?      @map("offer_gbp") @db.Decimal(10, 2)
+  status           TradeInStatus @default(submitted)
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user User? @relation("TradeInRequestUser", fields: [userId], references: [userId])
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("trade_in_requests")
 }
