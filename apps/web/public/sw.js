@@ -2,18 +2,29 @@
  * Birmingham AV service worker.
  *
  * Strategy:
- * - Precache the app shell (offline fallback at /)
- * - Stale-while-revalidate for static assets (CSS, JS, fonts, images)
- * - Network-first for HTML and API responses (so admin data stays fresh)
+ * - Precache the app shell, including the /offline fallback page.
+ * - Stale-while-revalidate for static assets (CSS, JS, fonts, images).
+ * - Network-first for HTML and API responses (so admin data stays fresh).
+ * - Navigation failures fall back to /offline (cached), not /.
  *
  * Versioned via CACHE_NAME — bump on each release to invalidate old caches.
  */
 
-const CACHE_NAME = 'bav-cache-v1';
-const SHELL = ['/', '/shop', '/manifest.webmanifest', '/brand/logo.png', '/icon-192.png'];
+const CACHE_NAME = 'bav-cache-v2';
+const OFFLINE_URL = '/offline';
+const SHELL = [
+  '/',
+  '/shop',
+  '/offline',
+  '/manifest.webmanifest',
+  '/brand/logo.png',
+  '/icon-192.png',
+];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).catch(() => undefined));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).catch(() => undefined),
+  );
   self.skipWaiting();
 });
 
@@ -34,7 +45,25 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for API + HTML, falls back to cache, falls back to shell.
+  // /offline itself: cache-first so the shell is always available.
+  if (url.pathname === OFFLINE_URL) {
+    event.respondWith(
+      caches.match(req).then(
+        (cached) =>
+          cached ??
+          fetch(req)
+            .then((res) => {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => undefined);
+              return res;
+            })
+            .catch(() => caches.match(OFFLINE_URL)),
+      ),
+    );
+    return;
+  }
+
+  // Network-first for API + HTML, falls back to cache, falls back to /offline.
   if (req.mode === 'navigate' || url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(req)
@@ -43,7 +72,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((c) => c.put(req, copy)).catch(() => undefined);
           return res;
         })
-        .catch(async () => (await caches.match(req)) ?? caches.match('/')),
+        .catch(async () => (await caches.match(req)) ?? caches.match(OFFLINE_URL) ?? caches.match('/')),
     );
     return;
   }
