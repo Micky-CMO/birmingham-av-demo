@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
 import { useCartStore } from '@/stores/cart';
+import { useUiStore } from '@/stores/ui';
 
 export type AddToCartButtonProps = {
   productId: string;
@@ -11,16 +11,15 @@ export type AddToCartButtonProps = {
   pricePerUnitGbp: number;
   imageUrl: string | null;
   inStock: boolean;
+  priceLabel: string;
+  buildNumber?: string;
+  conditionGrade?: string;
+  builder?: { displayName: string; builderCode: string };
 };
 
-/**
- * Renders the "Add to cart" / quantity stepper / "Add to wishlist" cluster.
- * Split into a client subcomponent so the owning product page can stay an
- * async server component (for direct Prisma access + generateMetadata).
- */
 export function AddToCartButton(props: AddToCartButtonProps) {
   const add = useCartStore((s) => s.add);
-  const [qty, setQty] = useState(1);
+  const openDrawer = useUiStore((s) => s.setCartOpen);
   const [added, setAdded] = useState(false);
 
   const onAdd = () => {
@@ -29,59 +28,25 @@ export function AddToCartButton(props: AddToCartButtonProps) {
       title: props.title,
       slug: props.slug,
       pricePerUnitGbp: props.pricePerUnitGbp,
-      qty,
+      qty: 1,
       imageUrl: props.imageUrl,
+      buildNumber: props.buildNumber,
+      conditionGrade: props.conditionGrade,
+      builder: props.builder,
     });
+    openDrawer(true);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };
 
   return (
-    <div className="flex flex-wrap items-stretch gap-3">
-      <div
-        role="group"
-        aria-label="Quantity"
-        className="inline-flex items-stretch overflow-hidden rounded-md border border-ink-300/70 dark:border-obsidian-500/70"
-      >
-        <button
-          type="button"
-          onClick={() => setQty((q) => Math.max(1, q - 1))}
-          className="h-12 w-10 text-body text-ink-700 transition-colors hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-obsidian-800"
-          aria-label="Decrease quantity"
-          disabled={qty <= 1}
-        >
-          -
-        </button>
-        <div
-          className="flex h-12 w-10 items-center justify-center border-x border-ink-300/70 font-mono text-body tabular-nums dark:border-obsidian-500/70"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {qty}
-        </div>
-        <button
-          type="button"
-          onClick={() => setQty((q) => Math.min(10, q + 1))}
-          className="h-12 w-10 text-body text-ink-700 transition-colors hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-obsidian-800"
-          aria-label="Increase quantity"
-          disabled={qty >= 10}
-        >
-          +
-        </button>
-      </div>
-      <Button size="lg" onClick={onAdd} disabled={!props.inStock}>
-        {added ? 'Added to cart' : props.inStock ? 'Add to cart' : 'Out of stock'}
-      </Button>
-      <Button
-        size="lg"
-        variant="outline"
-        aria-disabled="true"
-        disabled
-        title="Wishlists coming soon"
-        className="cursor-not-allowed"
-      >
-        Add to wishlist
-      </Button>
+    <div className="mb-8 flex flex-col gap-3">
+      <button type="button" onClick={onAdd} disabled={!props.inStock} className="bav-cta">
+        {!props.inStock ? 'Out of stock' : added ? 'Added to cart' : `Add to cart — ${props.priceLabel}`}
+      </button>
+      <button type="button" className="bav-cta-secondary">
+        Talk to a builder first
+      </button>
     </div>
   );
 }

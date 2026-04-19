@@ -43,6 +43,11 @@ export type BuilderSummary = {
   };
 };
 
+export type CartLineBuilder = {
+  displayName: string;
+  builderCode: string;
+};
+
 export type CartLine = {
   productId: string;
   title: string;
@@ -50,4 +55,13 @@ export type CartLine = {
   pricePerUnitGbp: number;
   qty: number;
   imageUrl: string | null;
+  /**
+   * Editorial build device (e.g. "073"). Joined from product at add-to-cart time
+   * so the drawer and cart page can render the №build canvas without a round-trip.
+   */
+  buildNumber?: string;
+  /** Product condition grade joined at add time: "New", "Like New", etc. */
+  conditionGrade?: string;
+  /** Builder snapshot joined at add time. Undefined for legacy lines. */
+  builder?: CartLineBuilder;
 };

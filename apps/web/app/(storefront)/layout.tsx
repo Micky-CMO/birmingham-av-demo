@@ -1,32 +1,18 @@
-import { Header } from '@/components/storefront/Header';
-import { Footer } from '@/components/storefront/Footer';
-import { CartDrawer } from '@/components/storefront/CartDrawer';
-import { SupportWidget } from '@/components/support/SupportWidget';
-import { GrainOverlay } from '@/components/fx/GrainOverlay';
-import { CursorFollower } from '@/components/fx/CursorFollower';
-import { SmoothScroll } from '@/components/fx/SmoothScroll';
-import { PageLoader } from '@/components/fx/PageLoader';
-import { ScrollProgressBar } from '@/components/fx/ScrollProgressBar';
-import { PWAInstaller } from '@/components/fx/PWAInstaller';
-import { AmbientBackground } from '@/components/fx/AmbientBackground';
+import { Nav } from '@/components/shell/Nav';
+import { Footer } from '@/components/shell/Footer';
+import { CartDrawer } from '@/components/cart/CartDrawer';
+import { activeBuildCount } from '@/lib/services/ops';
 
-export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
+export const dynamic = 'force-dynamic';
+
+export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
+  const activeBuilds = await activeBuildCount();
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <AmbientBackground />
-      <SmoothScroll />
-      <PageLoader />
-      <ScrollProgressBar />
-      <Header />
-      <main className="relative z-10 flex-1">
-        <div className="page-transition">{children}</div>
-      </main>
-      <Footer />
+    <div className="flex min-h-dvh flex-col bg-paper text-ink">
+      <Nav activeBuilds={activeBuilds} />
+      <main className="flex-1">{children}</main>
+      <Footer activeBuilds={activeBuilds} version="v0.1.0" />
       <CartDrawer />
-      <SupportWidget />
-      <PWAInstaller />
-      <GrainOverlay />
-      <CursorFollower />
     </div>
   );
 }

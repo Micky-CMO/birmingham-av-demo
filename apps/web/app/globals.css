@@ -2,22 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Design tokens — briefing §2
+   ============================================================ */
 :root {
-  color-scheme: light;
-  --surface: 255 255 255;
-  --canvas: 249 250 251;
-  --ink: 10 10 10;
-  --ink-muted: 107 114 128;
-  --line: 212 212 216;
-}
-
-[data-theme='dark'] {
-  color-scheme: dark;
-  --surface: 11 13 18;
-  --canvas: 5 5 5;
-  --ink: 249 250 251;
-  --ink-muted: 148 163 184;
-  --line: 34 40 51;
+  --paper: #f7f5f2;
+  --paper-2: #ede9e3;
+  --ink: #17140f;
+  --ink-60: rgba(23, 20, 15, 0.6);
+  --ink-30: rgba(23, 20, 15, 0.3);
+  --ink-10: rgba(23, 20, 15, 0.1);
+  --accent: #1eb53a;
 }
 
 html {
@@ -26,16 +21,23 @@ html {
 
 html,
 body {
-  background: rgb(var(--canvas));
-  color: rgb(var(--ink));
-  font-family: var(--font-inter), system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
-/* Kill blue flash on tap for touch devices; our own :active / hover styling
-   handles feedback where appropriate. */
+body {
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Kill blue flash on tap for touch devices. */
 a,
 button,
 [role='button'] {
@@ -56,30 +58,9 @@ textarea {
   }
 }
 
-/* Keep the native OS cursor visible everywhere. The custom CursorFollower is a
-   decorative spotlight, not a replacement — so the user can always see where
-   they are about to click. */
-html,
-body {
-  cursor: auto;
-}
-a,
-button,
-[role='button'],
-input[type='submit'],
-input[type='button'],
-label[for],
-.cursor-pointer {
-  cursor: pointer;
-}
-
-* {
-  border-color: rgb(var(--line) / 0.6);
-}
-
 ::selection {
-  background: #1eb53a;
-  color: #0a0a0a;
+  background: var(--accent);
+  color: var(--paper);
 }
 
 /* Premium scrollbar */
@@ -91,13 +72,13 @@ label[for],
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--ink) / 0.18);
-  border-radius: 8px;
+  background: rgba(23, 20, 15, 0.18);
+  border-radius: 0;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #1eb53a;
+  background: var(--ink);
   background-clip: padding-box;
 }
 
@@ -111,32 +92,304 @@ label[for],
   }
 }
 
-/* Page transition (@starting-style + template.tsx) */
-@supports (transition-behavior: allow-discrete) {
-  .page-transition {
+/* ============================================================
+   Canonical .bav-* utility classes — briefing §3
+   ============================================================ */
+.bav-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.bav-italic {
+  font-style: italic;
+  font-variation-settings: 'opsz' 144;
+}
+
+.bav-hover-opa {
+  transition: opacity 300ms;
+}
+.bav-hover-opa:hover {
+  opacity: 0.6;
+}
+
+/* Animated underline with right-to-left sweep on hover */
+.bav-underline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 3px;
+}
+.bav-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform-origin: right;
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bav-underline:hover::after {
+  transform-origin: left;
+}
+.bav-underline .arrow {
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-block;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+.bav-underline:hover .arrow {
+  transform: translateX(6px);
+}
+
+/* Editorial fade-up on page load */
+.bav-fade {
+  animation: bavFade 1000ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes bavFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
     opacity: 1;
     transform: translateY(0);
-    transition:
-      opacity 420ms cubic-bezier(0.16, 1, 0.3, 1),
-      transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  @starting-style {
-    .page-transition {
-      opacity: 0;
-      transform: translateY(8px);
-    }
   }
 }
 
-/* Hero gradient mesh */
-.hero-mesh {
-  background-image:
-    radial-gradient(1200px 600px at 10% -10%, rgba(30, 181, 58, 0.08), transparent 60%),
-    radial-gradient(1000px 500px at 90% 110%, rgba(79, 145, 255, 0.05), transparent 60%);
+/* Pulsing green dot — signals workshop-active */
+.bav-pulse {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.bav-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.35;
+  animation: bavPulse 2.4s ease-out infinite;
+}
+@keyframes bavPulse {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 
-/* Marquee seam hide */
-.marquee-mask {
-  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
-  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+/* Soft paper canvas — used for product tiles, category tiles, gallery. The
+   №[buildNumber] placeholder device sits inside one of these. */
+.bav-canvas {
+  background: linear-gradient(140deg, #ede9e3 0%, #e3ded6 100%);
+  position: relative;
+  overflow: hidden;
+}
+.bav-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 32% 28%, rgba(255, 255, 255, 0.7), transparent 55%);
+  pointer-events: none;
+}
+.bav-canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 72% 82%, rgba(23, 20, 15, 0.09), transparent 60%);
+  pointer-events: none;
+}
+
+.bav-ink-canvas {
+  background: linear-gradient(140deg, #2a2520 0%, #17140f 85%);
+  position: relative;
+  overflow: hidden;
+}
+.bav-ink-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 28% 22%, rgba(255, 255, 255, 0.14), transparent 50%);
+  pointer-events: none;
+}
+
+/* Primary CTA — full-width ink pill */
+.bav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid var(--ink);
+  color: var(--paper);
+  background: var(--ink);
+  padding: 22px 44px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: opacity 300ms;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+  text-transform: uppercase;
+}
+.bav-cta:hover {
+  opacity: 0.88;
+}
+.bav-cta:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bav-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid var(--ink-10);
+  color: var(--ink);
+  background: transparent;
+  padding: 20px 44px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: border-color 300ms;
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+}
+.bav-cta-secondary:hover {
+  border-color: var(--ink);
+}
+
+/* Thumbnail selector used on product gallery */
+.bav-thumb {
+  cursor: pointer;
+  transition: opacity 300ms;
+}
+.bav-thumb:hover {
+  opacity: 1 !important;
+}
+
+/* Product-tile № hover glow (opacity 0.09 → 0.20) */
+.bav-tile-num {
+  color: rgba(23, 20, 15, 0.09);
+  transition: color 600ms ease;
+}
+.bav-tile:hover .bav-tile-num {
+  color: rgba(23, 20, 15, 0.2);
+}
+
+/* Shop-listing sort dropdown */
+.bav-sort-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--paper);
+  border: 1px solid var(--ink-10);
+  z-index: 20;
+  min-width: 200px;
+}
+
+/* Mobile bottom-sheet filter drawer */
+.bav-filter-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 85vh;
+  background: var(--paper);
+  border-top: 1px solid var(--ink-10);
+  z-index: 100;
+  animation: bavSlideUp 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes bavSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Cart drawer — slide in from right, backdrop fade */
+.bav-cart-drawer {
+  animation: bavSlideInRight 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes bavSlideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-bav-backdrop-in {
+  animation: bavBackdropIn 300ms ease backwards;
+}
+@keyframes bavBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Cart drawer: on narrow viewports, inset from the left so the backdrop is tappable */
+@media (max-width: 520px) {
+  .bav-cart-drawer {
+    width: auto !important;
+    left: 16px !important;
+  }
+}
+
+/* Hairline-bordered form field — used on checkout */
+.bav-field {
+  transition: border-color 200ms;
+}
+.bav-field:focus {
+  border-color: var(--ink);
+  outline: none;
+}
+.bav-field::placeholder {
+  color: var(--ink-30);
+  font-family: var(--font-instrument-sans), system-ui, sans-serif;
+}
+
+/* Responsive shell behaviour — kept as media queries because .bav-* is the
+   source of truth; mirroring them as tailwind screens would duplicate state. */
+@media (max-width: 900px) {
+  .bav-nav-inner,
+  .bav-footer-inner {
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+  .bav-nav-links {
+    display: none !important;
+  }
+  .bav-nav-hamburger {
+    display: inline-flex !important;
+  }
+}
+@media (max-width: 520px) {
+  .bav-nav-desktop-util {
+    display: none !important;
+  }
+  .bav-footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+  }
+  .bav-footer-brand,
+  .bav-footer-col {
+    grid-column: span 1 !important;
+  }
 }
