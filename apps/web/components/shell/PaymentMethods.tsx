@@ -26,6 +26,7 @@ const COURIERS = [
   { src: '/brand/delivery/dpd.svg', alt: 'DPD' },
   { src: '/brand/delivery/evri.svg', alt: 'Evri' },
   { src: '/brand/delivery/ups.svg', alt: 'UPS' },
+  { src: '/brand/delivery/fedex.svg', alt: 'FedEx' },
 ];
 
 const card =

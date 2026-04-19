@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Green A pointing up-left -->
-  <path fill="#1EB53A" d="M16 20 L28 20 L20 44 L8 44 Z"/>
-  <!-- Green accent parallelogram top-right -->
-  <path fill="#1EB53A" d="M36 20 L56 20 L50 28 L30 28 Z"/>
-  <!-- Black V pointing down-right -->
-  <path fill="#0A0A0A" d="M24 28 L44 28 L36 52 L16 52 Z"/>
-</svg>
