@@ -9,7 +9,8 @@ export type AccountSectionKey =
   | 'business'
   | 'av-care'
   | 'security'
-  | 'notifications';
+  | 'notifications'
+  | 'loyalty';
 
 export type AvCareStatusValue =
   | 'trialing'
@@ -35,6 +36,7 @@ const LINKS: Array<{ key: AccountSectionKey; label: string; href: string }> = [
   { key: 'av-care', label: 'AV Care', href: '/account/av-care' },
   { key: 'security', label: 'Security', href: '/account/security' },
   { key: 'notifications', label: 'Notifications', href: '/account/notifications' },
+  { key: 'loyalty', label: 'Loyalty', href: '/account/loyalty' },
 ];
 
 /**

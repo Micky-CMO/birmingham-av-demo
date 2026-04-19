@@ -6,8 +6,12 @@ type NavKey =
   | 'orders'
   | 'builders'
   | 'returns'
-  | 'products'
   | 'support'
+  | 'marketing'
+  | 'products'
+  | 'staff'
+  | 'analytics'
+  | 'payouts'
   | 'reports'
   | 'settings'
   | 'builder-portal'
@@ -18,8 +22,12 @@ const NAV: { key: NavKey; label: string; href: string }[] = [
   { key: 'orders', label: 'Orders', href: '/admin/orders' },
   { key: 'builders', label: 'Builders', href: '/admin/builders' },
   { key: 'returns', label: 'Returns', href: '/admin/returns' },
-  { key: 'products', label: 'Products', href: '/admin/products' },
   { key: 'support', label: 'Support', href: '/admin/support' },
+  { key: 'marketing', label: 'Marketing', href: '/admin/discounts' },
+  { key: 'products', label: 'Products', href: '/admin/products' },
+  { key: 'staff', label: 'Staff', href: '/admin/staff' },
+  { key: 'analytics', label: 'Analytics', href: '/admin/analytics' },
+  { key: 'payouts', label: 'Payouts', href: '/admin/payouts' },
   { key: 'reports', label: 'Reports', href: '/admin/reports' },
   { key: 'settings', label: 'Settings', href: '/admin/settings' },
 ];
@@ -36,8 +44,18 @@ function activeKey(): NavKey | null {
   if (path.includes('/admin/orders')) return 'orders';
   if (path.includes('/admin/builders')) return 'builders';
   if (path.includes('/admin/returns')) return 'returns';
-  if (path.includes('/admin/products')) return 'products';
   if (path.includes('/admin/support')) return 'support';
+  // Marketing cluster: discounts + newsletters + emails
+  if (
+    path.includes('/admin/discounts') ||
+    path.includes('/admin/newsletters') ||
+    path.includes('/admin/emails')
+  )
+    return 'marketing';
+  if (path.includes('/admin/products')) return 'products';
+  if (path.includes('/admin/staff')) return 'staff';
+  if (path.includes('/admin/analytics')) return 'analytics';
+  if (path.includes('/admin/payouts')) return 'payouts';
   if (path.includes('/admin/reports')) return 'reports';
   if (path.includes('/admin/settings')) return 'settings';
   return null;

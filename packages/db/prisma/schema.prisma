@@ -212,6 +212,8 @@ model User {
   quotes              Quote[]                 @relation("QuoteUser")
   wishlistItems       WishlistItem[]          @relation("UserWishlist")
   giftCardsPurchased  GiftCard[]              @relation("GiftCardPurchaser")
+  newslettersCreated  NewsletterCampaign[]    @relation("NewsletterCreator")
+  loyaltyAccount      LoyaltyAccount?         @relation("LoyaltyUser")
 
   @@index([role])
   @@index([deletedAt])
@@ -990,4 +992,107 @@ model GiftCard {
   @@index([purchaserUserId])
   @@index([recipientEmail])
   @@map("gift_cards")
+}
+
+// ============ Batch 12: Marketing, Payouts, Loyalty ============
+
+enum NewsletterStatus {
+  draft
+  scheduled
+  sent
+  paused
+}
+
+model NewsletterCampaign {
+  campaignId        String           @id @default(uuid()) @map("campaign_id") @db.Uuid
+  subject           String
+  html              String
+  text              String
+  status            NewsletterStatus @default(draft)
+  scheduledFor      DateTime?        @map("scheduled_for")
+  sentAt            DateTime?        @map("sent_at")
+  recipientSegment  String           @default("all") @map("recipient_segment")
+  sentCount         Int              @default(0) @map("sent_count")
+  openCount         Int              @default(0) @map("open_count")
+  clickCount        Int              @default(0) @map("click_count")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  createdBy         String?          @map("created_by") @db.Uuid
+
+  creator User? @relation("NewsletterCreator", fields: [createdBy], references: [userId])
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("newsletter_campaigns")
+}
+
+enum BuilderPayoutStatus {
+  pending
+  paid
+  cancelled
+}
+
+model BuilderPayout {
+  payoutId              String              @id @default(uuid()) @map("payout_id") @db.Uuid
+  builderId             String              @map("builder_id") @db.Uuid
+  periodStart           DateTime            @map("period_start")
+  periodEnd             DateTime            @map("period_end")
+  totalBuildsCompleted  Int                 @default(0) @map("total_builds_completed")
+  totalRevenueGbp       Decimal             @default(0) @map("total_revenue_gbp") @db.Decimal(14, 2)
+  commissionRateBp      Int                 @default(1500) @map("commission_rate_bp")
+  commissionGbp         Decimal             @default(0) @map("commission_gbp") @db.Decimal(14, 2)
+  status                BuilderPayoutStatus @default(pending)
+  paidAt                DateTime?           @map("paid_at")
+  stripeTransferId      String?             @map("stripe_transfer_id")
+  createdAt             DateTime            @default(now()) @map("created_at")
+
+  @@index([builderId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("builder_payouts")
+}
+
+enum LoyaltyTier {
+  bronze
+  silver
+  gold
+  platinum
+}
+
+enum LoyaltyTransactionKind {
+  earned
+  redeemed
+  expired
+  adjusted
+}
+
+model LoyaltyAccount {
+  accountId        String      @id @default(uuid()) @map("account_id") @db.Uuid
+  userId           String      @unique @map("user_id") @db.Uuid
+  balance          Int         @default(0)
+  tier             LoyaltyTier @default(bronze)
+  lifetimeEarned   Int         @default(0) @map("lifetime_earned")
+  lifetimeRedeemed Int         @default(0) @map("lifetime_redeemed")
+  tierSince        DateTime    @default(now()) @map("tier_since")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  user         User                 @relation("LoyaltyUser", fields: [userId], references: [userId], onDelete: Cascade)
+  transactions LoyaltyTransaction[] @relation("LoyaltyAccountTxns")
+
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  transactionId  String                 @id @default(uuid()) @map("transaction_id") @db.Uuid
+  accountId      String                 @map("account_id") @db.Uuid
+  delta          Int
+  kind           LoyaltyTransactionKind
+  relatedOrderId String?                @map("related_order_id") @db.Uuid
+  description    String
+  createdAt      DateTime               @default(now()) @map("created_at")
+
+  account LoyaltyAccount @relation("LoyaltyAccountTxns", fields: [accountId], references: [accountId], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([createdAt(sort: Desc)])
+  @@map("loyalty_transactions")
 }
