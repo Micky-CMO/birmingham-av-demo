@@ -25,12 +25,21 @@ const config: Config = {
           'green-100': '#E5F7EA',
           black: '#0A0A0A',
         },
+        // Design-system paper + ink tokens (briefing §2)
+        paper: {
+          DEFAULT: '#F7F5F2',
+          2: '#EDE9E3',
+        },
         ink: {
+          DEFAULT: '#17140F',
           900: '#0A0A0A',
           700: '#2B2E35',
           500: '#6B7280',
           300: '#D4D4D8',
           100: '#F3F4F6',
+          60: 'rgba(23, 20, 15, 0.6)',
+          30: 'rgba(23, 20, 15, 0.3)',
+          10: 'rgba(23, 20, 15, 0.1)',
           50: '#F9FAFB',
         },
         obsidian: {
