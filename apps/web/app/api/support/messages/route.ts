@@ -7,6 +7,8 @@ import { bad, handleError, ok, parseBody } from '@/lib/json';
 import { publishEvent } from '@/lib/events';
 import { runSupportTurn } from '@bav/ai';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await parseBody(request, SupportMessageSchema);

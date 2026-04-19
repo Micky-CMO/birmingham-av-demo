@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { bad, handleError, ok } from '@/lib/json';
 import { requireStaff } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(_: Request, { params }: { params: { id: string; flagId: string } }) {
   try {
     await requireStaff();

@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers';
 import { ok } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   const store = cookies();
   store.delete('bav_session');

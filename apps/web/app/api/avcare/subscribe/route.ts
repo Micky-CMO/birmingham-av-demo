@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { getCurrentUser } from '@/lib/session';
 import { bad, handleError, ok, parseBody } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 const SubscribeBodySchema = z.object({
   tier: z.enum(['essential', 'plus']),
 });

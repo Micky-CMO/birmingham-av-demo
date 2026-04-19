@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { bad, handleError, ok, parseBody } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 const Schema = z.object({
   identifier: z.string().min(2).max(120),
   password: z.string().min(1).max(200),

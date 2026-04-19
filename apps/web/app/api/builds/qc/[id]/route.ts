@@ -4,6 +4,8 @@ import { connectMongo, BuildEventLog } from '@/lib/db';
 import { bad, handleError, ok, parseBody } from '@/lib/json';
 import { getCurrentUser } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 const Schema = z.object({
   unitId: z.string().uuid(),
   items: z.array(z.object({ code: z.string(), label: z.string(), passed: z.boolean(), notes: z.string().optional() })),

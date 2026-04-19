@@ -6,6 +6,8 @@ import { bad, handleError, ok, parseBody } from '@/lib/json';
 import { publishEvent } from '@/lib/events';
 import { AddressSchema } from '@bav/lib/schemas';
 
+export const dynamic = 'force-dynamic';
+
 const CreateOrderSchema = z.object({
   email: z.string().email(),
   firstName: z.string().min(1),

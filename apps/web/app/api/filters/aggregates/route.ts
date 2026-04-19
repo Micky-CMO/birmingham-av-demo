@@ -1,6 +1,8 @@
 import { connectMongo, ProductCatalog } from '@/lib/db';
 import { handleError, ok } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await connectMongo();

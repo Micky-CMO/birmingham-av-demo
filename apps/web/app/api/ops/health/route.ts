@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db';
 import { connectMongo } from '@/lib/db';
 import { handleError, ok } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const checks: Record<string, string> = {};

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { connectMongo, BuilderQualityFlag } from '@/lib/db';
 import { bad, handleError, ok, parseBody } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     const b = await prisma.builder.findUnique({

@@ -6,6 +6,8 @@ import Link from 'next/link';
 // Shared .nf-row / .nf-canvas CSS lives in apps/web/app/globals.css.
 // =============================================================================
 
+export const dynamic = 'force-static';
+
 const suggestions = [
   { label: 'Home', href: '/' },
   { label: 'Shop everything', href: '/shop' },

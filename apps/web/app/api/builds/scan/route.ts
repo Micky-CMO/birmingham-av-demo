@@ -5,6 +5,8 @@ import { bad, handleError, ok, parseBody } from '@/lib/json';
 import { publishEvent } from '@/lib/events';
 import { getCurrentUser } from '@/lib/session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();

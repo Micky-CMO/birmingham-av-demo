@@ -2,6 +2,8 @@ import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
 import { bad, handleError, ok } from '@/lib/json';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await getCurrentUser();
