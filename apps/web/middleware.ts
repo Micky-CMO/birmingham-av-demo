@@ -17,6 +17,11 @@ export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
 
+  // /admin/login is the unauth'd gate — skip staff checks so it's reachable.
+  if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   if (process.env.BAV_DEMO_MODE === 'true') {
     const res = NextResponse.next({ request: { headers: requestHeaders } });
     res.cookies.set('bav_staff', '1', { httpOnly: true, sameSite: 'lax', path: '/' });
@@ -26,7 +31,7 @@ export function middleware(request: NextRequest) {
   const staff = request.cookies.get('bav_staff')?.value;
   if (!staff) {
     const url = request.nextUrl.clone();
-    url.pathname = '/auth/login';
+    url.pathname = '/admin/login';
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
