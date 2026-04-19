@@ -1,117 +1,51 @@
-import { Badge, GlassCard } from '@/components/ui';
 import { getBuilderSummary } from '@/lib/services/builders';
-import { formatGbp } from '@bav/lib';
+import { BuilderRoster } from '@/components/admin/BuilderRoster';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: 'Builders · Admin',
+  robots: { index: false, follow: false },
+};
+
 export default async function BuildersPage() {
   const summary = await getBuilderSummary();
+  const builders = summary.items;
+  const totalUnits = builders.reduce((a, b) => a + b.unitsSold90d, 0);
 
   return (
-    <div>
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-h2 font-display">Builders</h1>
-          <p className="mt-1 text-small text-ink-500">
-            {summary.totals.totalBuilders} active · overall RMA {(summary.totals.overallRmaRate * 100).toFixed(2)}%
-          </p>
+    <div
+      className="min-h-screen bg-paper text-ink"
+      style={{ padding: '48px 40px 96px' }}
+    >
+      <div className="mx-auto max-w-[1440px]">
+        {/* page heading */}
+        <div className="mb-10">
+          <div className="bav-label mb-3 text-ink-60">— Builders</div>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h1
+              className="m-0 font-display font-light"
+              style={{
+                fontSize: 'clamp(36px, 4vw, 56px)',
+                lineHeight: 1,
+                letterSpacing: '-0.02em',
+                fontVariationSettings: "'opsz' 144",
+              }}
+            >
+              {builders.length === 22 ? 'Twenty-two' : builders.length}{' '}
+              <span className="bav-italic">in the workshop</span>.
+            </h1>
+            <div
+              className="font-mono tabular-nums text-ink-30"
+              style={{ fontSize: 12 }}
+            >
+              {builders.length} builders · {totalUnits} units · 90 days
+            </div>
+          </div>
         </div>
-      </header>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-6">
-        <Totals label="Builders" value={summary.totals.totalBuilders.toString()} />
-        <Totals label="Units 90d" value={summary.totals.totalUnitsSold.toLocaleString('en-GB')} />
-        <Totals label="Revenue 90d" value={formatGbp(summary.totals.totalRevenueGbp)} tone="positive" />
-        <Totals label="Margin 90d" value={formatGbp(summary.totals.totalMarginGbp)} tone="positive" />
-        <Totals
-          label="RMA rate"
-          value={`${(summary.totals.overallRmaRate * 100).toFixed(2)}%`}
-          tone={summary.totals.overallRmaRate > 0.04 ? 'critical' : undefined}
-        />
-        <Totals
-          label="Flagged"
-          value={summary.totals.flaggedCount.toString()}
-          tone={summary.totals.flaggedCount > 0 ? 'critical' : undefined}
-        />
+        <BuilderRoster builders={builders} />
       </div>
-
-      <GlassCard className="mt-6 overflow-x-auto">
-        <table className="w-full text-small">
-          <thead className="border-b border-ink-300/50 text-caption text-ink-500 dark:border-obsidian-500/40">
-            <tr>
-              <th className="px-4 py-3 text-left">Builder</th>
-              <th className="px-4 py-3 text-left">Tier</th>
-              <th className="px-4 py-3 text-right">Units 90d</th>
-              <th className="px-4 py-3 text-right">Revenue</th>
-              <th className="px-4 py-3 text-right">Margin</th>
-              <th className="px-4 py-3 text-right">ROI</th>
-              <th className="px-4 py-3 text-right">RMA rate</th>
-              <th className="px-4 py-3 text-right">Quality</th>
-              <th className="px-4 py-3 text-right">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.items.map((r) => (
-              <tr key={r.builderId} className="border-b border-ink-300/40 last:border-0 hover:bg-ink-50/60 dark:border-obsidian-500/30 dark:hover:bg-obsidian-800/50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-ink-100 dark:bg-obsidian-800" />
-                    <div>
-                      <div className="font-medium">{r.displayName}</div>
-                      <div className="font-mono text-caption text-ink-500">{r.builderCode} · {r.warehouseNodeCode}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge tone={`tier-${r.tier}` as 'tier-standard'}>{r.tier}</Badge>
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{r.unitsSold90d}</td>
-                <td className="px-4 py-3 text-right font-mono">{formatGbp(r.revenueGbp90d)}</td>
-                <td className="px-4 py-3 text-right font-mono">{formatGbp(r.marginGbp90d)}</td>
-                <td className="px-4 py-3 text-right font-mono">{r.roiPct90d.toFixed(1)}%</td>
-                <td className="px-4 py-3 text-right font-mono">
-                  <span
-                    className={
-                      r.rmaRate90d > 0.04
-                        ? 'text-semantic-critical'
-                        : r.rmaRate90d > 0.02
-                          ? 'text-semantic-warning'
-                          : 'text-brand-green'
-                    }
-                  >
-                    {(r.rmaRate90d * 100).toFixed(2)}%
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right font-mono">{r.qualityScore.toFixed(2)}</td>
-                <td className="px-4 py-3 text-right">
-                  {r.flagged ? <Badge tone="critical">review</Badge> : <Badge tone="positive">healthy</Badge>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </GlassCard>
     </div>
-  );
-}
-
-function Totals({ label, value, tone }: { label: string; value: string; tone?: 'positive' | 'warning' | 'critical' }) {
-  return (
-    <GlassCard className="p-4">
-      <div className="text-caption text-ink-500">{label}</div>
-      <div
-        className={`mt-1 font-display text-h3 ${
-          tone === 'positive'
-            ? 'text-brand-green'
-            : tone === 'warning'
-              ? 'text-semantic-warning'
-              : tone === 'critical'
-                ? 'text-semantic-critical'
-                : ''
-        }`}
-      >
-        {value}
-      </div>
-    </GlassCard>
   );
 }
