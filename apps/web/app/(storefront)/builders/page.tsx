@@ -1,298 +1,126 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
-import { PageHero } from '@/components/storefront/PageHero';
-import { GlassCard } from '@/components/ui';
 import { prisma } from '@/lib/db';
 
 export const metadata: Metadata = {
-  title: 'Our builders',
+  title: 'The builders',
   description:
-    'Meet the Birmingham AV builders: browse every bench technician by tier, quality score, workshop, and current wait time before you order your new or refurbished PC.',
+    'Every machine that leaves the Birmingham AV workshop has one of their names on it. Meet the builders.',
 };
 export const dynamic = 'force-dynamic';
 
-const TIER_DOT: Record<'probation' | 'standard' | 'preferred' | 'elite', string> = {
-  probation: 'bg-tier-probation',
-  standard: 'bg-tier-standard',
-  preferred: 'bg-tier-preferred',
-  elite: 'bg-tier-elite',
-};
-const TIER_LABEL: Record<'probation' | 'standard' | 'preferred' | 'elite', string> = {
-  probation: 'Probation',
-  standard: 'Standard',
-  preferred: 'Preferred',
+const TIER_LABEL: Record<string, string> = {
   elite: 'Elite',
+  preferred: 'Preferred',
+  standard: 'Standard',
+  probation: 'Probation',
 };
 
-type AvailabilityFilter = 'all' | 'available' | 'elite';
-
-function parseFilter(v: string | string[] | undefined): AvailabilityFilter {
-  const raw = Array.isArray(v) ? v[0] : v;
-  if (raw === 'available' || raw === 'elite') return raw;
-  return 'all';
-}
-
-export default async function BuildersPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
-  const filter = parseFilter(searchParams?.filter);
-
+export default async function BuildersPage() {
   const builders = await prisma.builder.findMany({
     where: { status: 'active' },
-    orderBy: [{ tier: 'desc' }, { qualityScore: 'desc' }],
-    include: {
-      warehouseNode: true,
-      _count: { select: { buildQueues: { where: { status: { in: ['queued', 'in_progress'] } } } } },
-    },
+    orderBy: { displayName: 'asc' },
   });
-
-  // Derive queue/wait data once, then filter in-memory (small table).
-  const enriched = builders.map((b) => {
-    const queueDepth = b._count.buildQueues;
-    const waitDays = queueDepth === 0 ? 0 : Math.max(1, Math.ceil((queueDepth * b.avgBuildMinutes) / (60 * 7)));
-    return { b, queueDepth, waitDays };
-  });
-
-  const visible = enriched.filter(({ b, waitDays }) => {
-    if (filter === 'available') return waitDays === 0;
-    if (filter === 'elite') return b.tier === 'elite';
-    return true;
-  });
-
-  // Top-rated builder across the whole active roster (not just the filtered view).
-  const topRatedId = enriched.reduce<{ id: string | null; score: number }>(
-    (acc, { b }) => {
-      const s = Number(b.qualityScore);
-      return s > acc.score ? { id: b.builderId, score: s } : acc;
-    },
-    { id: null, score: -Infinity },
-  ).id;
-
-  const totals = {
-    count: builders.length,
-    units: builders.reduce((s, b) => s + b.totalUnitsBuilt, 0),
-    avgQuality: builders.reduce((s, b) => s + Number(b.qualityScore), 0) / Math.max(1, builders.length),
-  };
-
-  const chips: { key: AvailabilityFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'available', label: 'Available now' },
-    { key: 'elite', label: 'Elite only' },
-  ];
 
   return (
-    <>
-      <PageHero
-        eyebrow="The bench"
-        title="Pick the builder who builds your PC."
-        lead={
-          <p>
-            Like choosing your barber: every builder has a roster, a reputation, and a wait time. Go with an Elite
-            builder and wait a few more days. Go with a rising Standard and ship faster. Either way, the name on the
-            warranty is the name on your order.
-          </p>
-        }
-        right={
-          <GlassCard className="p-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="font-display text-[clamp(1.5rem,2.4vw,2rem)] font-semibold">{totals.count}</div>
-                <div className="font-mono text-caption text-ink-500">builders</div>
-              </div>
-              <div>
-                <div className="font-display text-[clamp(1.5rem,2.4vw,2rem)] font-semibold">
-                  {totals.units.toLocaleString('en-GB')}
-                </div>
-                <div className="font-mono text-caption text-ink-500">units built</div>
-              </div>
-              <div>
-                <div className="font-display text-[clamp(1.5rem,2.4vw,2rem)] font-semibold text-brand-green">
-                  {totals.avgQuality.toFixed(2)}
-                </div>
-                <div className="font-mono text-caption text-ink-500">avg rating</div>
-              </div>
+    <main>
+      {/* Page header */}
+      <section className="border-b border-ink-10">
+        <div className="bav-page-pad mx-auto max-w-page px-12 py-20 md:py-24">
+          <div className="bav-fade">
+            <div className="bav-label mb-7 text-ink-60">— The people behind the builds</div>
+
+            <h1 className="m-0 mb-9 font-display text-[clamp(56px,8vw,120px)] font-light leading-[0.94] tracking-[-0.035em]">
+              The <span className="bav-italic">builders</span>.
+            </h1>
+
+            <p className="m-0 mb-7 max-w-[640px] text-[19px] leading-[1.55] text-ink-60">
+              Every machine that leaves the workshop has one of their names on it. Not a
+              department, not a ticket number — a person with a builder code, a list of
+              specialities, and a particular way of running cable.
+            </p>
+
+            <div className="bav-label text-ink-30">
+              {builders.length} builders · Birmingham, United Kingdom
             </div>
-          </GlassCard>
-        }
-      />
-
-      {/* Filter chips + tier legend */}
-      <section className="mx-auto max-w-7xl px-6 pb-8">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter builders by availability">
-          {chips.map((c) => {
-            const active = c.key === filter;
-            const href = c.key === 'all' ? '/builders' : `/builders?filter=${c.key}`;
-            return (
-              <Link
-                key={c.key}
-                href={href}
-                aria-pressed={active}
-                className={`rounded-full border px-4 py-1.5 font-mono text-caption uppercase tracking-[0.15em] transition-colors duration-200 ${
-                  active
-                    ? 'border-brand-green bg-brand-green/10 text-brand-green'
-                    : 'border-ink-300/60 text-ink-500 hover:border-brand-green hover:text-brand-green dark:border-obsidian-500/60'
-                }`}
-              >
-                {c.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center gap-4 font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
-          <span>Tier legend:</span>
-          {(['probation', 'standard', 'preferred', 'elite'] as const).map((t) => (
-            <span key={t} className="flex items-center gap-2">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${TIER_DOT[t]}`} />
-              {TIER_LABEL[t]}
-            </span>
-          ))}
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        {builders.length === 0 ? (
-          <GlassCard className="p-12 text-center">
-            <p className="font-display text-h3 font-semibold">The bench is warming up.</p>
-            <p className="mt-2 text-small text-ink-500">
-              We haven&apos;t onboarded any builders yet. Check back soon — roster drops weekly.
+      {/* Roster grid */}
+      <section>
+        <div className="bav-page-pad mx-auto max-w-page px-12 py-24 md:py-32">
+          {builders.length === 0 ? (
+            <p className="text-center text-[15px] text-ink-60">
+              The bench is warming up. Roster drops weekly — check back soon.
             </p>
-          </GlassCard>
-        ) : visible.length === 0 ? (
-          <GlassCard className="p-10 text-center text-small text-ink-500">
-            No builders match this filter right now.{' '}
-            <Link href="/builders" className="text-brand-green hover:underline">
-              Show all
-            </Link>
-          </GlassCard>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {visible.map(({ b, queueDepth, waitDays }) => {
-              const isTopRated = b.builderId === topRatedId;
-              return (
-                <Link key={b.builderId} href={`/builders/${b.builderCode}`}>
-                  <GlassCard
-                    className={`group relative flex flex-col overflow-hidden p-6 transition-all duration-420 hover:-translate-y-0.5 hover:shadow-lift ${
-                      isTopRated ? 'ring-1 ring-tier-elite/40' : ''
-                    }`}
+          ) : (
+            <div className="bav-roster-grid">
+              {builders.map((b) => {
+                const estYear = new Date(b.joinedAt).getFullYear();
+                const years = b.yearsBuilding;
+                const isFeaturedTier = b.tier === 'elite' || b.tier === 'preferred';
+                return (
+                  <Link
+                    key={b.builderId}
+                    href={`/builders/${b.builderCode}`}
+                    className="bav-builder-card"
                   >
-                    {isTopRated && (
-                      <span
-                        className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-full bg-tier-elite/10 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-tier-elite shadow-[0_0_10px_rgba(212,175,55,0.35)]"
-                        aria-label="Top rated builder"
-                      >
-                        <span
-                          aria-hidden
-                          className="inline-block h-1.5 w-1.5 rounded-full bg-tier-elite shadow-[0_0_6px_rgba(212,175,55,0.8)]"
-                        />
-                        Top rated
-                      </span>
-                    )}
-
-                    <div className="flex items-start justify-between">
-                      <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
+                    {/* Portrait — ink canvas 4:5 */}
+                    <div
+                      className="bav-ink-canvas bav-builder-portrait relative mb-6"
+                      style={{ aspectRatio: '4 / 5' }}
+                    >
+                      <div className="bav-label absolute left-3.5 top-3.5 text-[rgba(247,245,242,0.40)]">
                         {b.builderCode}
-                      </span>
-                      {!isTopRated && (
-                        <span className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.15em] text-ink-500">
-                          <span
-                            aria-hidden
-                            className={`inline-block h-1.5 w-1.5 rounded-full ${TIER_DOT[b.tier as keyof typeof TIER_DOT]}`}
-                          />
-                          {b.tier}
-                        </span>
+                      </div>
+                      <div className="bav-label absolute bottom-3.5 right-3.5 text-[rgba(247,245,242,0.40)]">
+                        Est. {estYear}
+                      </div>
+                      {isFeaturedTier && (
+                        <div className="bav-label absolute bottom-3.5 left-3.5 text-[rgba(247,245,242,0.40)]">
+                          {TIER_LABEL[b.tier] ?? b.tier}
+                        </div>
                       )}
                     </div>
 
-                    <div className="mt-5 flex items-center gap-3">
-                      <div className="relative h-12 w-12 overflow-hidden rounded-full bg-ink-100 dark:bg-obsidian-800">
-                        {b.avatarUrl && <Image src={b.avatarUrl} alt={b.displayName} fill className="object-cover" />}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate font-display text-h3 font-semibold">{b.displayName}</div>
-                        <div className="truncate font-mono text-caption text-ink-500">{b.warehouseNode.nodeCode}</div>
-                      </div>
+                    {/* Name */}
+                    <div className="mb-1.5 font-display text-[22px] leading-[1.15] tracking-[-0.015em]">
+                      {b.displayName}
                     </div>
 
-                    {/* Star rating visual */}
-                    <div className="mt-4 flex items-center gap-1">
-                      <StarRating score={Number(b.qualityScore)} />
-                      <span className="ml-1 font-mono text-caption text-ink-500">
-                        {Number(b.qualityScore).toFixed(2)}
-                      </span>
+                    {/* Role line */}
+                    <div className="bav-label mb-2.5 text-ink-60">
+                      Builder · {years} {years === 1 ? 'year' : 'years'}
                     </div>
 
-                    <dl className="mt-5 grid grid-cols-3 gap-2 border-t border-ink-300/50 pt-4 font-mono text-caption dark:border-obsidian-500/40">
-                      <div>
-                        <dt className="text-ink-500">Builds</dt>
-                        <dd className="mt-0.5 tabular-nums">{b.totalUnitsBuilt.toLocaleString('en-GB')}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-ink-500">RMA</dt>
-                        <dd
-                          className={`mt-0.5 tabular-nums ${Number(b.rmaRateRolling90d) > 0.04 ? 'text-semantic-critical' : 'text-brand-green'}`}
-                        >
-                          {(Number(b.rmaRateRolling90d) * 100).toFixed(1)}%
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-ink-500">Queue</dt>
-                        <dd className="mt-0.5 tabular-nums">{queueDepth}</dd>
-                      </div>
-                    </dl>
-
-                    {/* Barber-shop wait indicator */}
-                    <div className="mt-4 flex items-center justify-between rounded-md bg-ink-100/60 px-3 py-2 dark:bg-obsidian-800/60">
-                      <span className="font-mono text-caption uppercase tracking-[0.2em] text-ink-500">Wait</span>
-                      <span
-                        className={`font-display text-small font-semibold ${
-                          waitDays === 0 ? 'text-brand-green' : waitDays > 5 ? 'text-semantic-warning' : ''
-                        }`}
+                    {/* Bio — two-line clamp */}
+                    {b.bio && (
+                      <div
+                        className="mb-2.5 overflow-hidden text-[13px] leading-[1.5] text-ink-60"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
                       >
-                        {waitDays === 0 ? 'Available now' : `${waitDays} day${waitDays === 1 ? '' : 's'}`}
-                      </span>
-                    </div>
+                        {b.bio}
+                      </div>
+                    )}
 
-                    <span
-                      aria-hidden
-                      className="absolute inset-x-6 bottom-0 h-px origin-left scale-x-0 bg-brand-green transition-transform duration-420 ease-unfold group-hover:scale-x-100"
-                    />
-                  </GlassCard>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                    {/* Specialities */}
+                    {b.specialities.length > 0 && (
+                      <div className="bav-label text-ink-30">
+                        Builds: {b.specialities.join(' · ')}
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
-    </>
-  );
-}
-
-function StarRating({ score }: { score: number }) {
-  return (
-    <div className="flex items-center gap-0.5" aria-label={`${score.toFixed(2)} out of 5`}>
-      {[1, 2, 3, 4, 5].map((s) => {
-        const filled = score >= s - 0.25;
-        const half = !filled && score >= s - 0.75;
-        return (
-          <svg key={s} width="12" height="12" viewBox="0 0 24 24" aria-hidden>
-            <defs>
-              <linearGradient id={`star-g-${s}`}>
-                <stop offset="50%" stopColor="#1EB53A" />
-                <stop offset="50%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M12 2 L14.9 8.6 L22 9.3 L16.5 14.1 L18.2 21 L12 17.3 L5.8 21 L7.5 14.1 L2 9.3 L9.1 8.6 Z"
-              fill={filled ? '#1EB53A' : half ? `url(#star-g-${s})` : '#D4D4D8'}
-              stroke={filled ? '#1EB53A' : '#D4D4D8'}
-            />
-          </svg>
-        );
-      })}
-    </div>
+    </main>
   );
 }
