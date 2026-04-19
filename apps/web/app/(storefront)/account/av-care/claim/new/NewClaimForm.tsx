@@ -75,6 +75,9 @@ export function NewClaimForm({ products, preSelectedProductId, tier }: NewClaimF
           productId: selectedProduct.productId,
           reason: selectedReason.key,
           description: description.trim(),
+          // TODO: upload `photos` to blob storage and include the resulting URLs.
+          // The ReplyBox captures file handles client-side; the upload service
+          // isn't wired yet, so we submit without attachments for now.
           photoUrls: [],
         }),
       });

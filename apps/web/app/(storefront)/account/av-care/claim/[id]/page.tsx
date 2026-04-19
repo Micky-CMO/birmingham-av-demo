@@ -206,6 +206,8 @@ export default async function AvCareClaimDetailPage({ params }: { params: { id: 
         </div>
 
         {showPayExcess && (
+          // TODO: wire up the pay-excess route — creates a Stripe
+          // PaymentIntent for £100 and redirects back on success.
           <Link
             href={`/account/av-care/claim/${claim.claimNumber}/pay-excess`}
             className="bav-cta"
