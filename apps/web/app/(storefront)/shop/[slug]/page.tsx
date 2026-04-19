@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ProductCard } from '@/components/storefront/ProductCard';
-import { FilterPanel } from '@/components/storefront/FilterPanel';
-import { listProducts } from '@/lib/services/products';
-import { getFilterAggregates } from '@/lib/services/filters';
 import { prisma } from '@/lib/db';
-import { ProductListQuerySchema } from '@bav/lib/schemas';
+import { ShopView, type CategoryOption, type BuilderOption } from '@/components/shop/ShopView';
+import type { TileProduct } from '@/components/shop/ProductTile';
+import { defaultImageFor } from '@/lib/services/products';
 import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
 import { buildCategoryTitle, buildCategoryDescription } from '@/lib/seo/metadata';
 
@@ -22,34 +20,75 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const count = await prisma.product.count({
     where: { isActive: true, categoryId: category.categoryId },
   });
-  const seoCat = { slug: category.slug, name: category.name };
   return {
-    title: buildCategoryTitle(seoCat, count),
-    description: buildCategoryDescription(seoCat, count),
+    title: buildCategoryTitle({ slug: category.slug, name: category.name }, count),
+    description: buildCategoryDescription({ slug: category.slug, name: category.name }, count),
   };
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
   const category = await prisma.productCategory.findUnique({ where: { slug: params.slug } });
   if (!category) notFound();
 
-  const flat = Object.fromEntries(
-    Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? '']),
-  );
-  const query = ProductListQuerySchema.parse({ ...flat, category: params.slug });
-  const [{ items, total }, aggregates] = await Promise.all([
-    listProducts(query),
-    getFilterAggregates(params.slug),
+  const [rows, categoryRows, builderRows, ceilingRow] = await Promise.all([
+    prisma.product.findMany({
+      where: { isActive: true, categoryId: category.categoryId },
+      include: {
+        inventory: { select: { stockQty: true } },
+        category: { select: { slug: true } },
+        builder: { select: { builderCode: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+    }),
+    prisma.productCategory.findMany({
+      include: { _count: { select: { products: true } } },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.builder.findMany({
+      where: { status: 'active' },
+      select: { builderCode: true, displayName: true, tier: true },
+      orderBy: { displayName: 'asc' },
+    }),
+    prisma.product.aggregate({
+      _max: { priceGbp: true },
+      where: { categoryId: category.categoryId },
+    }),
   ]);
 
+  const products: TileProduct[] = rows.map((p) => ({
+    productId: p.productId,
+    sku: p.sku,
+    slug: p.slug,
+    title: p.title,
+    subtitle: p.subtitle ?? null,
+    priceGbp: Number(p.priceGbp),
+    compareAtGbp: p.compareAtGbp ? Number(p.compareAtGbp) : null,
+    conditionGrade: p.conditionGrade,
+    warrantyMonths: p.warrantyMonths ?? 12,
+    isFeatured: Boolean(p.isFeatured),
+    stockQty: p.inventory?.stockQty ?? 0,
+    imageUrl: p.primaryImageUrl ?? defaultImageFor(p.category?.slug),
+    categorySlug: p.category?.slug ?? 'other',
+    builderCode: p.builder?.builderCode ?? '',
+  }));
+
+  const categories: CategoryOption[] = categoryRows.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    count: c._count.products,
+  }));
+
+  const builders: BuilderOption[] = builderRows.map((b) => ({
+    builderCode: b.builderCode,
+    displayName: b.displayName,
+    tier: b.tier,
+  }));
+
+  const priceCeiling = Math.ceil(Number(ceilingRow._max.priceGbp ?? 5000) / 100) * 100;
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+    <>
       <BreadcrumbSchema
         items={[
           { name: 'Home', url: '/' },
@@ -57,39 +96,13 @@ export default async function CategoryPage({
           { name: category.name, url: `/shop/${params.slug}` },
         ]}
       />
-      <header>
-        <p className="font-mono text-caption uppercase tracking-widest text-ink-500">Category</p>
-        <h1 className="mt-1 font-display text-[clamp(1.75rem,7vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em] sm:mt-2">
-          {category.name}
-        </h1>
-        <p className="mt-1 text-small text-ink-500 sm:mt-2">{total.toLocaleString('en-GB')} items</p>
-      </header>
-
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:mt-10 sm:gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <FilterPanel
-          categories={aggregates.categories}
-          conditions={aggregates.conditions}
-          showCategoryFilter={false}
-          cpuFamilies={aggregates.cpuFamilies}
-          gpuFamilies={aggregates.gpuFamilies}
-          ramSizes={aggregates.ramSizes}
-          builders={aggregates.builders}
-          priceCeiling={aggregates.priceCeiling}
-        />
-        <div>
-          {items.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-ink-300 p-10 text-center text-ink-500 sm:p-16 dark:border-obsidian-500">
-              No products match these filters.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3">
-              {items.map((p) => (
-                <ProductCard key={p.productId} product={p} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      <ShopView
+        products={products}
+        categories={categories}
+        builders={builders}
+        priceCeiling={priceCeiling}
+        defaultCategory={params.slug}
+      />
+    </>
   );
 }

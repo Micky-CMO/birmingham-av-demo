@@ -9,6 +9,7 @@ import { AddToCartButton } from './AddToCartButton';
 import { ProductSchema } from '@/components/seo/ProductSchema';
 import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
 import { buildProductTitle, buildProductDescription } from '@/lib/seo/metadata';
+import { ReviewsList, type ReviewItem } from '@/components/product/ReviewsList';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function ProductPage({ params }: { params: { slug: string }
   const { product } = data;
   const catalog = data.catalog as Catalog | null;
 
-  const [related, totalBuilds] = await Promise.all([
+  const [related, totalBuilds, reviewRows] = await Promise.all([
     prisma.product.findMany({
       where: {
         isActive: true,
@@ -58,7 +59,26 @@ export default async function ProductPage({ params }: { params: { slug: string }
       include: { builder: { select: { displayName: true, builderCode: true } } },
     }),
     prisma.product.count({ where: { isActive: true } }),
+    prisma.review.findMany({
+      where: { productId: product.productId, adminStatus: 'approved' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { user: { select: { firstName: true } } },
+    }),
   ]);
+
+  const reviews: ReviewItem[] = reviewRows.map((r) => ({
+    reviewId: r.reviewId,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    reviewerFirstName: r.user?.firstName ?? 'Anonymous',
+    date: r.createdAt,
+    verified: r.verifiedPurchase,
+    photos: r.photoUrls,
+    helpful: r.helpfulCount,
+    builder: { displayName: product.builder.displayName },
+  }));
 
   const buildNumber = buildNumberFromSku(product.sku);
   const [titleMain, titleSwash] = splitForSwash(product.title);
@@ -352,6 +372,11 @@ export default async function ProductPage({ params }: { params: { slug: string }
           </div>
         </section>
       )}
+
+      {/* Reviews */}
+      <div className="border-t border-ink-10">
+        <ReviewsList product={{ slug: product.slug }} reviews={reviews} />
+      </div>
 
       {/* Timeline */}
       <section className="border-t border-ink-10 bg-paper-2">
