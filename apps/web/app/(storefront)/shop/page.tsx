@@ -4,12 +4,23 @@ import { FilterPanel } from '@/components/storefront/FilterPanel';
 import { listProducts } from '@/lib/services/products';
 import { getFilterAggregates } from '@/lib/services/filters';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
+import { buildShopTitle, buildShopDescription } from '@/lib/seo/metadata';
+import { prisma } from '@/lib/db';
 
-export const metadata: Metadata = {
-  title: 'Shop PCs: new and refurbished',
-  description:
-    'Shop every Birmingham AV PC, new and refurbished: filter by CPU, GPU, RAM, price, builder, and condition grade. Each unit tested, warrantied, and built in Birmingham.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let count: number | undefined;
+  try {
+    count = await prisma.product.count({ where: { isActive: true } });
+  } catch {
+    count = undefined;
+  }
+  return {
+    title: buildShopTitle(count),
+    description: buildShopDescription(count),
+  };
+}
+
 export const dynamic = 'force-dynamic';
 
 export default async function ShopPage({
@@ -25,6 +36,12 @@ export default async function ShopPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <BreadcrumbSchema
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Shop', url: '/shop' },
+        ]}
+      />
       <header className="flex items-end justify-between">
         <div>
           <p className="font-mono text-caption uppercase tracking-widest text-ink-500">Catalog</p>

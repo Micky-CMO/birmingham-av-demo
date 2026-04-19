@@ -6,6 +6,8 @@ import { listProducts } from '@/lib/services/products';
 import { getFilterAggregates } from '@/lib/services/filters';
 import { prisma } from '@/lib/db';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
+import { buildCategoryTitle, buildCategoryDescription } from '@/lib/seo/metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,13 +19,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: 'This PC category is no longer available at Birmingham AV.',
     };
   }
+  const count = await prisma.product.count({
+    where: { isActive: true, categoryId: category.categoryId },
+  });
+  const seoCat = { slug: category.slug, name: category.name };
   return {
-    title: category.name,
-    description:
-      `Shop new and refurbished ${category.name} from Birmingham AV: every unit tested on the bench, built by a named UK builder, and shipped with a 12-month warranty.`.slice(
-        0,
-        159,
-      ),
+    title: buildCategoryTitle(seoCat, count),
+    description: buildCategoryDescription(seoCat, count),
   };
 }
 
@@ -48,6 +50,13 @@ export default async function CategoryPage({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <BreadcrumbSchema
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Shop', url: '/shop' },
+          { name: category.name, url: `/shop/${params.slug}` },
+        ]}
+      />
       <header>
         <p className="font-mono text-caption uppercase tracking-widest text-ink-500">Category</p>
         <h1 className="mt-1 font-display text-[clamp(1.75rem,7vw,3rem)] font-semibold leading-[1.05] tracking-[-0.025em] sm:mt-2">

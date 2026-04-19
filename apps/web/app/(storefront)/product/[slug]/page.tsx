@@ -6,6 +6,9 @@ import { getProductBySlug } from '@/lib/services/products';
 import { prisma } from '@/lib/db';
 import { formatGbp } from '@bav/lib';
 import { AddToCartButton } from './AddToCartButton';
+import { ProductSchema } from '@/components/seo/ProductSchema';
+import { BreadcrumbSchema } from '@/components/seo/BreadcrumbSchema';
+import { buildProductTitle, buildProductDescription } from '@/lib/seo/metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +18,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     return { title: 'Product not found', description: 'This listing is no longer available at Birmingham AV.' };
   }
   const { product } = data;
-  const priceLabel = formatGbp(Number(product.priceGbp));
-  const desc = `${product.title} — built by ${product.builder.displayName}. ${priceLabel} · ${product.warrantyMonths}-month warranty.`.slice(0, 159);
-  return { title: product.title, description: desc };
+  const seoProduct = {
+    title: product.title,
+    subtitle: product.subtitle,
+    conditionGrade: product.conditionGrade,
+    warrantyMonths: product.warrantyMonths,
+    priceGbp: Number(product.priceGbp),
+    builderDisplayName: product.builder.displayName,
+    categorySlug: product.category.slug,
+    inStock: (product.inventory?.stockQty ?? 0) > 0,
+  };
+  return {
+    title: buildProductTitle(seoProduct),
+    description: buildProductDescription(seoProduct),
+  };
 }
 
 type Catalog = {
@@ -71,8 +85,43 @@ export default async function ProductPage({ params }: { params: { slug: string }
     { step: 'Dispatch', detail: 'Packed, manifested, shipped. Tracking sent by email and app.' },
   ];
 
+  const schemaImages: string[] = Array.from(
+    new Set(
+      [
+        product.primaryImageUrl,
+        ...(product.imageUrls ?? []),
+        ...(catalog?.images?.map((i) => i.url) ?? []),
+      ].filter((u): u is string => typeof u === 'string' && u.length > 0),
+    ),
+  );
+
+  const seoProduct = {
+    title: product.title,
+    description:
+      (product.subtitle ??
+        `${product.conditionGrade} ${product.category.name} built by ${product.builder.displayName} at Birmingham AV.`).slice(0, 300),
+    sku: product.sku,
+    slug: product.slug,
+    priceGbp: Number(product.priceGbp),
+    compareAtGbp: product.compareAtGbp ? Number(product.compareAtGbp) : null,
+    conditionGrade: product.conditionGrade,
+    imageUrls: schemaImages,
+    warrantyMonths: product.warrantyMonths,
+    inStock,
+    builderName: product.builder.displayName,
+  };
+
   return (
     <div>
+      <ProductSchema product={seoProduct} />
+      <BreadcrumbSchema
+        items={[
+          { name: 'Home', url: '/' },
+          { name: 'Shop', url: '/shop' },
+          { name: product.category.name, url: `/shop/${product.category.slug}` },
+          { name: product.title, url: `/product/${product.slug}` },
+        ]}
+      />
       {/* Breadcrumb */}
       <div className="border-b border-ink-10">
         <div className="mx-auto flex max-w-page items-center justify-between px-12 py-5">

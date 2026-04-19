@@ -10,6 +10,7 @@ import { ScrollReveal } from '@/components/fx/ScrollReveal';
 import { listProducts } from '@/lib/services/products';
 import { getSpotlightBuilder } from '@/lib/services/builders';
 import { ProductListQuerySchema } from '@bav/lib/schemas';
+import { OrganizationSchema } from '@/components/seo/OrganizationSchema';
 
 export const metadata: Metadata = {
   title: 'New and refurbished PCs built in Birmingham',
@@ -27,6 +28,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <OrganizationSchema />
       <HeroVideo />
       <StatsRail />
       <ScrollReveal>
