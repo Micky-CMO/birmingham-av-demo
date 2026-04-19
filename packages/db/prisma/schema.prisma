@@ -207,6 +207,11 @@ model User {
   avCareClaims        AvCareClaim[]
   qrBatchesCreated    QrBatch[]               @relation("QrBatchCreator")
   inventoryMovements  InventoryMovement[]     @relation("InventoryMovementActor")
+  businessAccount     BusinessAccount?        @relation("BusinessOwner")
+  managedAccounts     BusinessAccount[]       @relation("BusinessAccountManager")
+  quotes              Quote[]                 @relation("QuoteUser")
+  wishlistItems       WishlistItem[]          @relation("UserWishlist")
+  giftCardsPurchased  GiftCard[]              @relation("GiftCardPurchaser")
 
   @@index([role])
   @@index([deletedAt])
@@ -342,15 +347,16 @@ model Product {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  builder      Builder           @relation(fields: [builderId], references: [builderId])
-  category     ProductCategory   @relation(fields: [categoryId], references: [categoryId])
-  inventory    ProductInventory?
-  units        Unit[]
-  orderItems   OrderItem[]
-  returns      Return[]
-  reviews      Review[]
-  tickets      SupportTicket[]
-  avCareClaims AvCareClaim[]
+  builder       Builder           @relation(fields: [builderId], references: [builderId])
+  category      ProductCategory   @relation(fields: [categoryId], references: [categoryId])
+  inventory     ProductInventory?
+  units         Unit[]
+  orderItems    OrderItem[]
+  returns       Return[]
+  reviews       Review[]
+  tickets       SupportTicket[]
+  avCareClaims  AvCareClaim[]
+  wishlistItems WishlistItem[]
 
   @@index([builderId])
   @@index([categoryId])
@@ -879,4 +885,109 @@ model InventoryMovement {
   @@index([action])
   @@index([actorId])
   @@map("inventory_movements")
+}
+
+// ============ Business accounts / trade (batch 11) ============
+
+enum BusinessAccountStatus {
+  pending_review
+  active
+  suspended
+}
+
+enum QuoteStatus {
+  submitted
+  awaiting_clarification
+  quoted
+  rejected
+  expired
+  converted
+}
+
+model BusinessAccount {
+  businessAccountId         String                @id @default(uuid()) @map("business_account_id") @db.Uuid
+  userId                    String                @unique @map("user_id") @db.Uuid
+  companyName               String                @map("company_name")
+  vatNumber                 String?               @map("vat_number")
+  companyRegNumber          String?               @map("company_reg_number")
+  billingAddress            Json                  @map("billing_address")
+  estimatedMonthlySpendBand String                @map("estimated_monthly_spend_band")
+  status                    BusinessAccountStatus @default(pending_review)
+  accountManagerId          String?               @map("account_manager_id") @db.Uuid
+  creditLimitGbp            Decimal               @default(0) @map("credit_limit_gbp") @db.Decimal(10, 2)
+  creditUsedGbp             Decimal               @default(0) @map("credit_used_gbp") @db.Decimal(10, 2)
+  createdAt                 DateTime              @default(now()) @map("created_at")
+  updatedAt                 DateTime              @updatedAt @map("updated_at")
+
+  user           User    @relation("BusinessOwner", fields: [userId], references: [userId])
+  accountManager User?   @relation("BusinessAccountManager", fields: [accountManagerId], references: [userId])
+  quotes         Quote[]
+
+  @@index([status])
+  @@index([accountManagerId])
+  @@map("business_accounts")
+}
+
+model Quote {
+  quoteId           String      @id @default(uuid()) @map("quote_id") @db.Uuid
+  quoteNumber       String      @unique @map("quote_number")
+  businessAccountId String?     @map("business_account_id") @db.Uuid
+  userId            String?     @map("user_id") @db.Uuid
+  contactEmail      String      @map("contact_email")
+  contactName       String      @map("contact_name")
+  itemsJson         Json        @map("items_json")
+  requiredBy        DateTime?   @map("required_by")
+  shippingAddress   Json        @map("shipping_address")
+  budgetBand        String?     @map("budget_band")
+  notes             String?
+  status            QuoteStatus @default(submitted)
+  amountGbp         Decimal?    @map("amount_gbp") @db.Decimal(10, 2)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  businessAccount BusinessAccount? @relation(fields: [businessAccountId], references: [businessAccountId])
+  user            User?            @relation("QuoteUser", fields: [userId], references: [userId])
+
+  @@index([businessAccountId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("quotes")
+}
+
+model WishlistItem {
+  wishlistItemId String   @id @default(uuid()) @map("wishlist_item_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  productId      String   @map("product_id") @db.Uuid
+  addedAt        DateTime @default(now()) @map("added_at")
+
+  user    User    @relation("UserWishlist", fields: [userId], references: [userId])
+  product Product @relation(fields: [productId], references: [productId])
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlist_items")
+}
+
+model GiftCard {
+  giftCardId      String    @id @default(uuid()) @map("gift_card_id") @db.Uuid
+  code            String    @unique
+  amountGbp       Decimal   @map("amount_gbp") @db.Decimal(10, 2)
+  balanceGbp      Decimal   @map("balance_gbp") @db.Decimal(10, 2)
+  purchaserUserId String?   @map("purchaser_user_id") @db.Uuid
+  recipientEmail  String    @map("recipient_email")
+  recipientName   String?   @map("recipient_name")
+  senderName      String?   @map("sender_name")
+  message         String?
+  deliverAt       DateTime? @map("deliver_at")
+  redeemedFirstAt DateTime? @map("redeemed_first_at")
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  purchaser User? @relation("GiftCardPurchaser", fields: [purchaserUserId], references: [userId])
+
+  @@index([purchaserUserId])
+  @@index([recipientEmail])
+  @@map("gift_cards")
 }
