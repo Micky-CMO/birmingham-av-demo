@@ -2092,3 +2092,43 @@ textarea {
 /* ============================================================
    END: batch-13
    ============================================================ */
+
+/* ============================================================
+   BEGIN: batch-12 (admin + loyalty)
+   ============================================================ */
+
+/* Loyalty dashboard responsive stacks (artefact 82) */
+@media (max-width: 900px) {
+  .bav-loyalty-hero {
+    grid-template-columns: 1fr !important;
+    gap: 48px !important;
+  }
+  .bav-loyalty-tiers-shell {
+    grid-template-columns: 1fr !important;
+  }
+  .bav-loyalty-tiers-row {
+    grid-template-columns: 1fr !important;
+  }
+  .bav-loyalty-tiers-row > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ink-10);
+  }
+  .bav-loyalty-tiers-row > div:last-child {
+    border-bottom: none;
+  }
+}
+
+/* Admin emails previewer — stack on narrow screens (artefact 80) */
+@media (max-width: 1100px) {
+  .bav-emails-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .bav-emails-grid > div:first-child {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ink-10);
+  }
+}
+
+/* ============================================================
+   END: batch-12
+   ============================================================ */
