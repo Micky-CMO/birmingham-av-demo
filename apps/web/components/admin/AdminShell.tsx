@@ -7,10 +7,12 @@ type NavKey =
   | 'builders'
   | 'returns'
   | 'support'
+  | 'reviews'
   | 'marketing'
   | 'products'
   | 'staff'
   | 'analytics'
+  | 'developers'
   | 'payouts'
   | 'reports'
   | 'settings'
@@ -23,10 +25,12 @@ const NAV: { key: NavKey; label: string; href: string }[] = [
   { key: 'builders', label: 'Builders', href: '/admin/builders' },
   { key: 'returns', label: 'Returns', href: '/admin/returns' },
   { key: 'support', label: 'Support', href: '/admin/support' },
+  { key: 'reviews', label: 'Reviews', href: '/admin/reviews' },
   { key: 'marketing', label: 'Marketing', href: '/admin/discounts' },
   { key: 'products', label: 'Products', href: '/admin/products' },
   { key: 'staff', label: 'Staff', href: '/admin/staff' },
   { key: 'analytics', label: 'Analytics', href: '/admin/analytics' },
+  { key: 'developers', label: 'Developers', href: '/admin/webhooks' },
   { key: 'payouts', label: 'Payouts', href: '/admin/payouts' },
   { key: 'reports', label: 'Reports', href: '/admin/reports' },
   { key: 'settings', label: 'Settings', href: '/admin/settings' },
@@ -44,7 +48,8 @@ function activeKey(): NavKey | null {
   if (path.includes('/admin/orders')) return 'orders';
   if (path.includes('/admin/builders')) return 'builders';
   if (path.includes('/admin/returns')) return 'returns';
-  if (path.includes('/admin/support')) return 'support';
+  if (path.includes('/admin/support') || path.includes('/admin/macros')) return 'support';
+  if (path.includes('/admin/reviews')) return 'reviews';
   // Marketing cluster: discounts + newsletters + emails
   if (
     path.includes('/admin/discounts') ||
@@ -55,6 +60,7 @@ function activeKey(): NavKey | null {
   if (path.includes('/admin/products')) return 'products';
   if (path.includes('/admin/staff')) return 'staff';
   if (path.includes('/admin/analytics')) return 'analytics';
+  if (path.includes('/admin/webhooks')) return 'developers';
   if (path.includes('/admin/payouts')) return 'payouts';
   if (path.includes('/admin/reports')) return 'reports';
   if (path.includes('/admin/settings')) return 'settings';

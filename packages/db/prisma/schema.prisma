@@ -214,6 +214,10 @@ model User {
   giftCardsPurchased  GiftCard[]              @relation("GiftCardPurchaser")
   newslettersCreated  NewsletterCampaign[]    @relation("NewsletterCreator")
   loyaltyAccount      LoyaltyAccount?         @relation("LoyaltyUser")
+  supportMacrosCreated SupportMacro[]         @relation("SupportMacroCreator")
+  referralCode        ReferralCode?           @relation("ReferralCodeUser")
+  referralsMade       Referral[]              @relation("ReferrerUser")
+  referralsReceived   Referral[]              @relation("ReferredUser")
 
   @@index([role])
   @@index([deletedAt])
@@ -1095,4 +1099,93 @@ model LoyaltyTransaction {
   @@index([accountId])
   @@index([createdAt(sort: Desc)])
   @@map("loyalty_transactions")
+}
+
+// ============ Batch 14: Support macros, referrals, webhook log ============
+
+enum WebhookEventSource {
+  stripe
+  paypal
+  royal_mail
+  dpd
+  other
+}
+
+enum ReferralStatus {
+  invited
+  signed_up
+  purchased
+  rewarded
+}
+
+model SupportMacro {
+  macroId    String   @id @default(uuid()) @map("macro_id") @db.Uuid
+  title      String
+  body       String
+  tags       String[] @default([])
+  createdBy  String?  @map("created_by") @db.Uuid
+  timesUsed  Int      @default(0) @map("times_used")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  creator User? @relation("SupportMacroCreator", fields: [createdBy], references: [userId])
+
+  @@index([createdBy])
+  @@index([createdAt(sort: Desc)])
+  @@map("support_macros")
+}
+
+model WebhookEvent {
+  eventId        String             @id @default(uuid()) @map("event_id") @db.Uuid
+  source         WebhookEventSource
+  eventType      String             @map("event_type")
+  payload        Json
+  signatureValid Boolean            @default(false) @map("signature_valid")
+  processed      Boolean            @default(false)
+  processedAt    DateTime?          @map("processed_at")
+  errorMessage   String?            @map("error_message")
+  receivedAt     DateTime           @default(now()) @map("received_at")
+
+  @@index([source, receivedAt(sort: Desc)])
+  @@index([eventType])
+  @@index([processed])
+  @@map("webhook_events")
+}
+
+model ReferralCode {
+  codeId         String   @id @default(uuid()) @map("code_id") @db.Uuid
+  code           String   @unique
+  userId         String   @unique @map("user_id") @db.Uuid
+  timesUsed      Int      @default(0) @map("times_used")
+  totalEarnedGbp Decimal  @default(0) @map("total_earned_gbp") @db.Decimal(10, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user      User       @relation("ReferralCodeUser", fields: [userId], references: [userId], onDelete: Cascade)
+  referrals Referral[] @relation("CodeReferrals")
+
+  @@index([userId])
+  @@map("referral_codes")
+}
+
+model Referral {
+  referralId        String         @id @default(uuid()) @map("referral_id") @db.Uuid
+  codeId            String         @map("code_id") @db.Uuid
+  referrerUserId    String         @map("referrer_user_id") @db.Uuid
+  referredUserId    String?        @map("referred_user_id") @db.Uuid
+  referredEmail     String         @map("referred_email")
+  status            ReferralStatus @default(invited)
+  rewardPendingGbp  Decimal        @default(0) @map("reward_pending_gbp") @db.Decimal(10, 2)
+  rewardPaidGbp     Decimal        @default(0) @map("reward_paid_gbp") @db.Decimal(10, 2)
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  code     ReferralCode @relation("CodeReferrals", fields: [codeId], references: [codeId], onDelete: Cascade)
+  referrer User         @relation("ReferrerUser", fields: [referrerUserId], references: [userId])
+  referred User?        @relation("ReferredUser", fields: [referredUserId], references: [userId])
+
+  @@index([codeId])
+  @@index([referrerUserId])
+  @@index([referredUserId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("referrals")
 }
