@@ -52,7 +52,7 @@ const COLS: Array<{ title: string; items: Array<{ label: string; href: string }>
     items: [
       { label: 'Trade accounts', href: '/business' },
       { label: 'Request a quote', href: '/business/quote' },
-      { label: 'Volume pricing', href: '/business/quote' },
+      { label: 'Volume pricing', href: '/business/quote?intent=volume' },
       { label: 'Refurbished fleets', href: '/business#fleets' },
       { label: 'Finance', href: '/finance' },
     ],

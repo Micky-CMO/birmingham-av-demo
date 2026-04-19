@@ -184,25 +184,61 @@ const MEGA_TABS: MegaTab[] = [
     },
   },
   {
+    key: 'hardware',
+    label: 'Hardware',
+    href: '/shop/parts',
+    explore: {
+      heading: 'Explore Hardware',
+      items: [
+        { label: 'Graphics cards', href: '/shop/parts?type=gpu' },
+        { label: 'Processors', href: '/shop/parts?type=cpu' },
+        { label: 'Motherboards', href: '/shop/parts?type=motherboard' },
+        { label: 'RAM + memory', href: '/shop/parts?type=ram' },
+        { label: 'PC cases', href: '/shop/parts?type=case' },
+        { label: 'Cooling', href: '/shop/parts?type=cooling' },
+        { label: 'Power supplies', href: '/shop/power-supply-chargers' },
+      ],
+    },
+    shop: {
+      heading: 'Shop Hardware',
+      items: [
+        { label: 'Shop all Hardware', href: '/shop/parts' },
+        { label: 'Latest arrivals', href: '/shop/parts?sort=newest' },
+        { label: 'Refurbished GPUs', href: '/shop/parts?type=gpu&condition=refurbished' },
+        { label: 'Under £200', href: '/shop/parts?priceMax=200' },
+        { label: 'Build a PC instead', href: '/configurator' },
+      ],
+    },
+    more: {
+      heading: 'More from Hardware',
+      items: [
+        { label: 'Compatibility check', href: '/support/compatibility' },
+        { label: 'AV Care warranty', href: '/av-care' },
+        { label: 'Trade-in your part', href: '/trade-in' },
+        { label: 'Meet the builders', href: '/builders' },
+      ],
+    },
+  },
+  {
     key: 'accessories',
     label: 'Accessories',
-    href: '/shop/parts',
+    href: '/shop/printers',
     explore: {
       heading: 'Explore Accessories',
       items: [
-        { label: 'Parts', href: '/shop/parts' },
         { label: 'Printers', href: '/shop/printers' },
-        { label: 'Power Supply + Chargers', href: '/shop/power-supply-chargers' },
+        { label: 'Cables + adapters', href: '/shop/parts?type=cable' },
+        { label: 'Chargers', href: '/shop/power-supply-chargers?type=charger' },
         { label: 'Other', href: '/shop/other' },
       ],
     },
     shop: {
       heading: 'Shop Accessories',
       items: [
-        { label: 'Shop all Accessories', href: '/shop?tab=accessories' },
-        { label: 'Latest arrivals', href: '/shop/parts?sort=newest' },
-        { label: 'Cables + adapters', href: '/shop/parts?type=cable' },
-        { label: 'Under £50', href: '/shop/parts?priceMax=50' },
+        { label: 'Shop all Accessories', href: '/shop/other' },
+        { label: 'Latest arrivals', href: '/shop/other?sort=newest' },
+        { label: 'Under £50', href: '/shop/other?priceMax=50' },
+        { label: 'Gift cards', href: '/gift-cards' },
       ],
     },
     more: {
@@ -211,7 +247,7 @@ const MEGA_TABS: MegaTab[] = [
         { label: 'AV Care warranty', href: '/av-care' },
         { label: 'Trade accounts', href: '/business' },
         { label: 'Bulk orders', href: '/business/quote' },
-        { label: 'Gift cards', href: '/gift-cards' },
+        { label: 'Compare', href: '/compare' },
       ],
     },
   },
