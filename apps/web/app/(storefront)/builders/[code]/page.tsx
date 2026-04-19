@@ -1,256 +1,270 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Badge, GlassCard } from '@/components/ui';
 import { prisma } from '@/lib/db';
-import { PageHero } from '@/components/storefront/PageHero';
-import { ProductCard } from '@/components/storefront/ProductCard';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
-  const b = await prisma.builder.findUnique({ where: { builderCode: params.code.toUpperCase() } });
+const TIER_LABEL: Record<string, string> = {
+  elite: 'Elite',
+  preferred: 'Preferred',
+  standard: 'Standard',
+  probation: 'Probation',
+};
+
+// avgBuildMinutes → "3h 24min" display string
+function formatBuildTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
+}
+
+// Mirrors buildNumberFromSku in app/(storefront)/product/[slug]/page.tsx so the
+// tiles on the profile show the same № device as the shop + product pages.
+function buildNumberFromSku(sku: string): string {
+  const m = sku.match(/(\d+)\s*$/);
+  if (!m || !m[1]) return '000';
+  return m[1].padStart(3, '0').slice(-3);
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { code: string };
+}): Promise<Metadata> {
+  const b = await prisma.builder.findUnique({
+    where: { builderCode: params.code.toUpperCase() },
+    select: { displayName: true, bio: true, builderCode: true },
+  });
   if (!b) {
     return {
       title: 'Builder not found',
       description: 'This Birmingham AV builder profile is no longer available.',
     };
   }
-  const quality = Number(b.qualityScore).toFixed(2);
   return {
-    title: `${b.displayName} · ${b.builderCode}`,
-    description: `${b.displayName} (${b.builderCode}) is a ${b.tier} Birmingham AV PC builder with ${b.totalUnitsBuilt.toLocaleString('en-GB')} builds and a ${quality} quality score.`.slice(0, 159),
+    title: `${b.displayName} — Birmingham AV`,
+    description: (b.bio ?? `${b.displayName} builds at Birmingham AV.`).slice(0, 155),
   };
 }
 
 export default async function BuilderProfile({ params }: { params: { code: string } }) {
   const b = await prisma.builder.findUnique({
     where: { builderCode: params.code.toUpperCase() },
-    include: { warehouseNode: true },
   });
-  if (!b) notFound();
+  if (!b || b.status !== 'active') notFound();
 
-  // Active catalogue listings for the "Current builds" grid.
   const products = await prisma.product.findMany({
     where: { builderId: b.builderId, isActive: true },
     orderBy: { createdAt: 'desc' },
-    take: 8,
+    take: 4,
     include: { inventory: true },
   });
 
-  // Physical units this builder has assembled recently, joined through to the product.
-  // We order by buildCompletedAt (falling back to createdAt for units still mid-assembly)
-  // to show what the bench has actually shipped lately.
-  const recentUnits = await prisma.unit.findMany({
-    where: { builderId: b.builderId },
-    orderBy: [{ buildCompletedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
-    take: 8,
-    include: { product: { include: { inventory: true } } },
-  });
+  const estYear = new Date(b.joinedAt).getFullYear();
+  const tierLabel = TIER_LABEL[b.tier] ?? b.tier;
+  const firstName = b.displayName.split(' ')[0];
+  const isFeaturedTier = b.tier === 'elite' || b.tier === 'preferred';
 
-  // The signature block shows b.bio as a pull quote. If we also pass bio into
-  // the hero lead we get an awkward duplicate. Put a generic lead in the hero
-  // and let the signature section carry the personal bio text.
-  const heroLead = b.bio
-    ? `Tier ${b.tier}. Based at ${b.warehouseNode.nodeCode}. ${b.totalUnitsBuilt.toLocaleString('en-GB')} units built to date with a ${Number(b.qualityScore).toFixed(2)}/5 quality score.`
-    : undefined;
+  const stats = [
+    { label: 'Units built', value: b.totalUnitsBuilt.toLocaleString('en-GB') },
+    { label: 'Quality score', value: `${Number(b.qualityScore).toFixed(1)} / 5.0` },
+    { label: 'RMA rate (90d)', value: `${(Number(b.rmaRateRolling90d) * 100).toFixed(1)}%` },
+    { label: 'Avg build time', value: formatBuildTime(b.avgBuildMinutes) },
+  ];
 
   return (
-    <>
-      <PageHero
-        eyebrow={`Builder · ${b.builderCode}`}
-        title={b.displayName}
-        lead={heroLead}
-        right={
-          <GlassCard className="p-6">
-            <div className="relative mx-auto h-28 w-28 overflow-hidden rounded-full bg-ink-100 dark:bg-obsidian-800">
-              {b.avatarUrl && <Image src={b.avatarUrl} alt={b.displayName} fill className="object-cover" />}
-            </div>
-            <div className="mt-4 flex justify-center">
-              <Badge tone={`tier-${b.tier}` as 'tier-preferred'}>{b.tier}</Badge>
-            </div>
-            <dl className="mt-6 grid grid-cols-2 gap-4 text-center font-mono text-caption">
-              <div>
-                <dt className="text-ink-500">Built</dt>
-                <dd className="mt-0.5 text-body font-medium tabular-nums">
-                  {b.totalUnitsBuilt.toLocaleString('en-GB')}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-ink-500">Sold</dt>
-                <dd className="mt-0.5 text-body font-medium tabular-nums">
-                  {b.totalUnitsSold.toLocaleString('en-GB')}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-ink-500">Quality</dt>
-                <dd className="mt-0.5 text-body font-medium tabular-nums text-brand-green">
-                  {Number(b.qualityScore).toFixed(2)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-ink-500">RMA 90d</dt>
-                <dd className="mt-0.5 text-body font-medium tabular-nums">
-                  {(Number(b.rmaRateRolling90d) * 100).toFixed(2)}%
-                </dd>
-              </div>
-            </dl>
-            <p className="mt-4 text-center font-mono text-caption text-ink-500">{b.warehouseNode.nodeCode}</p>
-          </GlassCard>
-        }
-      />
-
-      {/* Builder signature — bio as a pull quote */}
-      {b.bio && (
-        <section className="mx-auto max-w-7xl px-6 pb-12">
-          <GlassCard className="relative overflow-hidden p-10 md:p-14">
-            <span
-              aria-hidden
-              className="absolute -left-2 -top-6 select-none font-display text-[8rem] leading-none text-brand-green/10 md:text-[10rem]"
-            >
-              &ldquo;
-            </span>
-            <p className="mb-3 font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Builder signature</p>
-            <blockquote className="font-display text-[clamp(1.5rem,3.2vw,2.5rem)] font-semibold leading-[1.15] tracking-[-0.02em]">
-              {b.bio}
-            </blockquote>
-            <footer className="mt-6 flex items-center gap-3 font-mono text-caption uppercase tracking-[0.2em] text-ink-500">
-              <span aria-hidden className="h-px w-10 bg-brand-green" />
-              <span>
-                {b.displayName} · {b.builderCode}
-              </span>
-            </footer>
-          </GlassCard>
-        </section>
-      )}
-
-      {/* Current listings */}
-      <section className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="mb-8 flex items-end justify-between">
-          <h2 className="font-display text-h2 font-semibold tracking-[-0.02em]">Current builds</h2>
-          <Link href="/shop" className="text-small font-medium text-brand-green hover:underline">
-            All products &rarr;
-          </Link>
+    <main>
+      {/* Breadcrumb */}
+      <div className="border-b border-ink-10">
+        <div className="bav-page-pad mx-auto flex max-w-page items-center justify-between px-12 py-[18px]">
+          <div className="bav-label flex gap-2.5 text-ink-60">
+            <Link href="/builders" className="bav-hover-opa text-inherit no-underline">
+              Builders
+            </Link>
+            <span className="text-ink-30">/</span>
+            <span className="text-ink">{b.displayName}</span>
+          </div>
+          <div className="bav-label text-ink-30">{b.builderCode}</div>
         </div>
-        {products.length === 0 ? (
-          <GlassCard className="p-10 text-center text-small text-ink-500">
-            This builder has no active listings right now.
-          </GlassCard>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {products.map((p) => (
-              <ProductCard
-                key={p.productId}
-                product={{
-                  productId: p.productId,
-                  slug: p.slug,
-                  title: p.title,
-                  specLine: null,
-                  conditionGrade: p.conditionGrade,
-                  priceGbp: Number(p.priceGbp),
-                  compareAtGbp: p.compareAtGbp ? Number(p.compareAtGbp) : null,
-                  imageUrl: null,
-                  inStock: (p.inventory?.stockQty ?? 0) > 0,
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
 
-      {/* Recent builds strip — real units shipped by this builder */}
-      {recentUnits.length > 0 && (
-        <section className="mx-auto max-w-7xl px-6 pb-16">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <p className="font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Off the bench</p>
-              <h2 className="mt-2 font-display text-h2 font-semibold tracking-[-0.02em]">Recent builds</h2>
-            </div>
-            <p className="font-mono text-caption text-ink-500">
-              Last {recentUnits.length} unit{recentUnits.length === 1 ? '' : 's'}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {recentUnits.map((u) => (
-              <ProductCard
-                key={u.unitId}
-                product={{
-                  productId: u.product.productId,
-                  slug: u.product.slug,
-                  title: u.product.title,
-                  specLine: null,
-                  conditionGrade: u.product.conditionGrade,
-                  priceGbp: Number(u.product.priceGbp),
-                  compareAtGbp: u.product.compareAtGbp ? Number(u.product.compareAtGbp) : null,
-                  imageUrl: null,
-                  inStock: (u.product.inventory?.stockQty ?? 0) > 0,
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* How to book this specific builder */}
-      <section className="mx-auto max-w-7xl px-6 pb-24">
-        <div className="mb-8">
-          <p className="font-mono text-caption uppercase tracking-[0.3em] text-ink-500">Book the chair</p>
-          <h2 className="mt-2 font-display text-h2 font-semibold tracking-[-0.02em]">
-            How to book {b.displayName}
-          </h2>
-          <p className="mt-2 max-w-2xl text-small text-ink-500">
-            Pick this builder at checkout just like you pick your barber. Same name on the order, same name on the
-            warranty card.
-          </p>
-        </div>
-        <ol className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {[
-            {
-              n: '01',
-              title: 'Add a build to your basket',
-              body: (
-                <>
-                  Choose any PC from <Link href="/shop" className="text-brand-green hover:underline">the shop</Link>{' '}
-                  or one of {b.displayName}&apos;s current builds above. If it&apos;s already listed under this
-                  builder, you&apos;re set.
-                </>
-              ),
-            },
-            {
-              n: '02',
-              title: 'Request this builder at checkout',
-              body: (
-                <>
-                  On the checkout page, open &ldquo;Builder preference&rdquo; and pick{' '}
-                  <span className="font-mono text-ink-900 dark:text-ink-100">{b.builderCode}</span>. We&apos;ll route
-                  your order into their queue and lock the serial number to their bench.
-                </>
-              ),
-            },
-            {
-              n: '03',
-              title: 'Track it from queue to QC',
-              body: (
-                <>
-                  Watch the wait tick down in your dashboard. You&apos;ll get a photo when the build starts, QC
-                  sign-off when it&apos;s boxed, and a dispatch ping the moment it leaves the warehouse.
-                </>
-              ),
-            },
-          ].map((step) => (
-            <li key={step.n}>
-              <GlassCard className="h-full p-6">
-                <div className="font-display text-[clamp(2rem,3vw,2.5rem)] font-semibold tracking-[-0.02em] text-brand-green">
-                  {step.n}
+      {/* Hero: portrait + info */}
+      <section className="border-b border-ink-10">
+        <div className="bav-page-pad mx-auto max-w-page px-12 py-16 md:py-24">
+          <div className="bav-profile-layout">
+            {/* Left — large portrait */}
+            <div className="bav-fade">
+              <div
+                className="bav-ink-canvas relative"
+                style={{ aspectRatio: '4 / 5' }}
+              >
+                <div className="bav-label absolute left-5 top-5 text-[13px] tracking-[0.14em] text-[rgba(247,245,242,0.40)]">
+                  {b.builderCode}
                 </div>
-                <h3 className="mt-2 font-display text-h3 font-semibold">{step.title}</h3>
-                <p className="mt-3 text-small leading-relaxed text-ink-700 dark:text-ink-300">{step.body}</p>
-              </GlassCard>
-            </li>
-          ))}
-        </ol>
+                {isFeaturedTier && (
+                  <div className="bav-label absolute bottom-5 left-5 text-[rgba(247,245,242,0.40)]">
+                    {tierLabel}
+                  </div>
+                )}
+                <div className="bav-label absolute bottom-5 right-5 text-[rgba(247,245,242,0.40)]">
+                  Est. {estYear}
+                </div>
+              </div>
+            </div>
+
+            {/* Right — sticky info column */}
+            <div
+              className="bav-profile-info bav-fade"
+              style={{ animationDelay: '120ms' }}
+            >
+              <div className="mb-6 flex items-center gap-3.5">
+                <div className="bav-label text-ink-60">{b.builderCode}</div>
+                <div className="bav-label flex items-center gap-2 text-ink-60">
+                  <span className="bav-pulse" />
+                  <span>Active</span>
+                </div>
+              </div>
+
+              <h1 className="m-0 mb-5 font-display text-[clamp(40px,4.5vw,64px)] font-light leading-[0.96] tracking-[-0.025em]">
+                {b.displayName}
+              </h1>
+
+              <div className="bav-label mb-7 text-ink-60">
+                {tierLabel} builder · {b.yearsBuilding}{' '}
+                {b.yearsBuilding === 1 ? 'year' : 'years'}
+              </div>
+
+              {b.specialities.length > 0 && (
+                <div className="mb-8 flex flex-wrap gap-2">
+                  {b.specialities.map((s) => (
+                    <span key={s} className="bav-spec-pill">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {b.bio && (
+                <p className="m-0 mb-10 text-[16px] leading-[1.65] text-ink-60">{b.bio}</p>
+              )}
+
+              {/* Stats 2×2 */}
+              <div className="bav-stats-grid mb-9 border-t border-ink-10">
+                {stats.map((s, i) => (
+                  <div
+                    key={s.label}
+                    className="py-5"
+                    style={{
+                      paddingRight: i % 2 === 0 ? 24 : 0,
+                      paddingLeft: i % 2 === 1 ? 24 : 0,
+                      borderTop: i >= 2 ? '1px solid var(--ink-10)' : 'none',
+                      borderLeft: i % 2 === 1 ? '1px solid var(--ink-10)' : 'none',
+                    }}
+                  >
+                    <div className="mb-1.5 font-mono text-[26px] tracking-[-0.02em]">
+                      {s.value}
+                    </div>
+                    <div className="bav-label text-ink-60">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Favourite build */}
+              {b.favouriteBuild && (
+                <div className="mb-9">
+                  <div className="bav-label mb-3.5 text-ink-60">— Favourite build</div>
+                  <blockquote className="m-0 border-l border-ink-10 pl-4">
+                    <p className="m-0 font-display text-[17px] font-light italic leading-[1.55] text-ink">
+                      &ldquo;{b.favouriteBuild}&rdquo;
+                    </p>
+                  </blockquote>
+                </div>
+              )}
+
+              <Link
+                href={`/shop?builder=${b.builderCode}`}
+                className="bav-underline text-[14px] text-ink no-underline"
+              >
+                <span>All builds by {firstName}</span>
+                <span className="arrow">→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
-    </>
+
+      {/* Products rail */}
+      {products.length > 0 && (
+        <section className="bg-paper-2">
+          <div className="bav-page-pad mx-auto max-w-page px-12 py-24">
+            <div className="mb-14 flex items-end justify-between">
+              <div>
+                <div className="bav-label mb-4 text-ink-60">
+                  — Products by {firstName}
+                </div>
+                <h2 className="m-0 font-display text-[clamp(32px,4vw,52px)] font-light leading-[0.98] tracking-[-0.025em]">
+                  Available <span className="bav-italic">now</span>.
+                </h2>
+              </div>
+              <Link
+                href={`/shop?builder=${b.builderCode}`}
+                className="bav-underline text-[14px] text-ink no-underline"
+              >
+                <span>See all</span>
+                <span className="arrow">→</span>
+              </Link>
+            </div>
+
+            <div className="bav-products-rail">
+              {products.map((p) => {
+                const buildNumber = buildNumberFromSku(p.sku);
+                const price = Number(p.priceGbp);
+                const compareAt = p.compareAtGbp ? Number(p.compareAtGbp) : null;
+                return (
+                  <Link
+                    key={p.productId}
+                    href={`/product/${p.slug}`}
+                    className="bav-tile block text-ink no-underline"
+                  >
+                    <div
+                      className="bav-canvas relative mb-3.5"
+                      style={{ aspectRatio: '4 / 5' }}
+                    >
+                      <div
+                        className="bav-tile-num absolute inset-0 flex select-none items-center justify-center font-display text-[clamp(72px,8vw,120px)] font-light italic leading-none tracking-[-0.05em]"
+                      >
+                        №{buildNumber}
+                      </div>
+                    </div>
+                    <div
+                      className="mb-1.5 overflow-hidden text-[13px] font-medium leading-[1.3]"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {p.title}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      {compareAt && (
+                        <span className="font-mono text-[11px] text-ink-30 line-through">
+                          £{compareAt.toLocaleString('en-GB')}
+                        </span>
+                      )}
+                      <span className="font-mono text-[15px]">
+                        £{price.toLocaleString('en-GB')}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
   );
 }
