@@ -1,6 +1,7 @@
+import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@/lib/db';
 import { embedText, shouldStub, stubEmbed } from '@/lib/brain/embed';
-import { retrieve, formatContext, loadIndex } from '@/lib/brain/retrieve';
+import { retrieve, retrieveByKeyword, formatContext, loadIndex, indexIsStub } from '@/lib/brain/retrieve';
 import { detectPriceIntent } from '@/lib/brain/price-intent';
 import { defaultImageFor } from '@/lib/services/products';
 
@@ -33,7 +34,7 @@ type ChatMsg = { role: 'user' | 'assistant' | 'system'; content: string };
 
 const BRAIN_URL = process.env.BAV_BRAIN_URL ?? 'http://localhost:11434';
 const BRAIN_MODEL = process.env.BAV_BRAIN_MODEL ?? 'mickai-medium:latest';
-const BRAIN_SCHEMA = (process.env.BAV_BRAIN_SCHEMA as 'openai-chat' | 'ollama' | undefined) ?? 'ollama';
+const BRAIN_SCHEMA = (process.env.BAV_BRAIN_SCHEMA as 'openai-chat' | 'ollama' | 'anthropic' | undefined) ?? 'ollama';
 const BRAIN_TOKEN = process.env.BAV_BRAIN_TOKEN;
 
 const SYSTEM_PROMPT = `You are the Birmingham AV PC specialist. You help customers with:
@@ -136,6 +137,30 @@ async function streamFromUpstream(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (BRAIN_TOKEN) headers.Authorization = `Bearer ${BRAIN_TOKEN}`;
 
+  if (BRAIN_SCHEMA === 'anthropic') {
+    // Anthropic fallback path — used for Vercel demo when Mickai server
+    // is unreachable. Uses the @anthropic-ai/sdk already in deps.
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing for anthropic schema');
+    const client = new Anthropic({ apiKey });
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
+    const convo = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+    const stream = await client.messages.stream({
+      model: process.env.BAV_BRAIN_ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system: systemMsg,
+      messages: convo,
+    });
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        await onToken(event.delta.text);
+      }
+    }
+    return;
+  }
+
   if (BRAIN_SCHEMA === 'openai-chat') {
     const res = await fetch(`${BRAIN_URL}/v1/chat/completions`, {
       method: 'POST',
@@ -228,17 +253,24 @@ export async function POST(request: Request) {
       };
 
       try {
-        // 1) Embed query + retrieve KB chunks
-        let queryVec: number[];
-        try {
-          queryVec = shouldStub() ? stubEmbed(query) : await embedText(query);
-        } catch (err) {
-          console.error('[specialist] embed failed', (err as Error).message);
-          send('error', { message: 'embed upstream unavailable' });
-          controller.close();
-          return;
+        // 1) Retrieve KB chunks.
+        // In stub mode (index built without a real embed server),
+        // cosine over random vectors is noise, so fall back to
+        // keyword-based retrieval. Both use the same chunk structure.
+        let kbHits = [] as ReturnType<typeof retrieve>;
+        if (index) {
+          if (indexIsStub() || shouldStub()) {
+            kbHits = retrieveByKeyword(query, { topK: 6 });
+          } else {
+            try {
+              const queryVec = await embedText(query);
+              kbHits = retrieve(queryVec, { topK: 6 });
+            } catch (err) {
+              console.warn('[specialist] embed upstream down, keyword fallback', (err as Error).message);
+              kbHits = retrieveByKeyword(query, { topK: 6 });
+            }
+          }
         }
-        const kbHits = index ? retrieve(queryVec, { topK: 6 }) : [];
 
         // 2) Live catalogue lookup if this is a price query
         const products = await queryLiveCatalogue(intent);

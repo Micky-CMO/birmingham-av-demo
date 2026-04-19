@@ -105,6 +105,69 @@ export function retrieve(queryEmbedding: number[], opts: RetrieveOptions = {}): 
 }
 
 /**
+ * Keyword-based retrieval for demo / stub mode. Scores each chunk by
+ * term-frequency overlap with the query. Lightweight BM25-ish signal:
+ * exact token hits + heading-path matches double-weighted. Use when
+ * the index was built with stub embeddings (retrieval on random
+ * vectors would return noise).
+ */
+export function retrieveByKeyword(query: string, opts: RetrieveOptions = {}): Retrieval[] {
+  const idx = loadIndex();
+  if (!idx) return [];
+  const { topK = 6, categories } = opts;
+
+  const queryTokens = query
+    .toLowerCase()
+    .replace(/[^a-z0-9£\s]/g, ' ')
+    .split(/\s+/)
+    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
+
+  if (queryTokens.length === 0) return [];
+
+  const filtered = categories
+    ? idx.chunks.filter((c) => categories.includes(c.category))
+    : idx.chunks;
+
+  const scored: Retrieval[] = filtered.map((chunk) => {
+    const haystack = `${chunk.headingPath.join(' ')} ${chunk.text}`.toLowerCase();
+    const pathStack = chunk.headingPath.join(' ').toLowerCase();
+    let score = 0;
+    for (const t of queryTokens) {
+      // Count occurrences in full text (capped)
+      const textHits = Math.min(5, (haystack.match(new RegExp(`\\b${escapeRe(t)}`, 'g')) ?? []).length);
+      score += textHits;
+      // Heading path hits are worth more
+      if (pathStack.includes(t)) score += 3;
+      // Category hit bonus
+      if (chunk.category.toLowerCase().includes(t)) score += 2;
+    }
+    // Normalise by query length so longer queries aren't unfairly penalised
+    return { chunk, score: score / Math.sqrt(queryTokens.length) };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.filter((r) => r.score > 0).slice(0, topK);
+}
+
+export function indexIsStub(): boolean {
+  const idx = loadIndex();
+  return idx?.embed_model === 'stub-embed-dev';
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const STOPWORDS = new Set([
+  'the', 'and', 'but', 'for', 'are', 'was', 'were', 'been', 'have', 'has', 'had',
+  'this', 'that', 'these', 'those', 'what', 'when', 'where', 'which', 'will',
+  'with', 'from', 'your', 'about', 'into', 'over', 'only', 'can', 'could',
+  'would', 'should', 'there', 'their', 'them', 'they', 'here',
+  'how', 'why', 'who', 'whom', 'you', 'yours', 'ours', 'not', 'any', 'all',
+  'some', 'more', 'most', 'less', 'much', 'many', 'few', 'been', 'being',
+]);
+
+/**
  * Format retrievals into a context block suitable for injecting into
  * the system prompt of the upstream LLM. Each chunk is labelled with
  * its heading path so the model knows what it's reading.

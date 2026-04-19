@@ -127,11 +127,10 @@ const INITIAL_MESSAGES: Message[] = [
   {
     messageId: 'm1',
     author: 'ai',
-    authorName: 'Triage · assistant',
+    authorName: 'BAV specialist',
     timestamp: '2026-04-19T10:14:00Z',
     body:
-      "Hello. I'm the triage assistant. Tell me what's happening and I'll either answer or hand you to a colleague. If you have an order number to hand, it speeds things up.",
-    confidence: 0.92,
+      "Hello. I'm the BAV PC specialist — I can help with hardware recommendations, Windows + Linux support, error codes, refurbishment process, returns, AV Care, and anything else about the shop. What are you trying to figure out?",
   },
 ];
 
@@ -156,41 +155,124 @@ export function SupportWidget() {
     return () => window.removeEventListener(SUPPORT_CHAT_OPEN_EVENT, handler);
   }, []);
 
-  const handleSend = (body: string) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        messageId: 'm' + (prev.length + 1),
-        author: 'customer',
-        authorName: 'You',
-        timestamp: new Date().toISOString(),
-        body,
-      },
-    ]);
-    // Demo escalation flow: after the first customer message, show an
-    // escalation banner and have a member of staff join ~3.5s later.
-    setTyping(true);
-    setEscalated(true);
-  };
+  const handleSend = async (body: string) => {
+    const userMessageId = 'm' + (messages.length + 1);
+    const aiMessageId = 'm' + (messages.length + 2);
+    const now = new Date().toISOString();
 
-  useEffect(() => {
-    if (!typing) return;
-    const t = setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          messageId: 'm' + (prev.length + 1),
-          author: 'human',
-          authorName: 'Leila · support',
-          timestamp: new Date().toISOString(),
-          body:
-            "Hi, Leila here. I've picked this up from the triage assistant. Give me a few minutes to check and I'll be back with an answer or a next step.",
-        },
-      ]);
+    // Append user message immediately, stage empty AI message we'll stream into.
+    const userMsg: Message = {
+      messageId: userMessageId,
+      author: 'customer',
+      authorName: 'You',
+      timestamp: now,
+      body,
+    };
+    const aiMsg: Message = {
+      messageId: aiMessageId,
+      author: 'ai',
+      authorName: 'BAV specialist',
+      timestamp: now,
+      body: '',
+    };
+    setMessages((prev) => [...prev, userMsg, aiMsg]);
+    setTyping(true);
+
+    // Build history from prior exchanges (skip the welcome seed + current stage).
+    const history = messages
+      .filter((m) => m.author === 'customer' || m.author === 'ai')
+      .slice(1)
+      .map((m) => ({
+        role: m.author === 'customer' ? 'user' : 'assistant',
+        content: m.body,
+      }));
+
+    try {
+      const res = await fetch('/api/chat/specialist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: body, history }),
+      });
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let streamed = '';
+      let lastError: string | null = null;
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split('\n\n');
+        buf = events.pop() ?? '';
+        for (const e of events) {
+          const eventLine = e.match(/^event:\s*(.+)$/m)?.[1]?.trim();
+          const dataLine = e.match(/^data:\s*(.+)$/m)?.[1]?.trim();
+          if (!eventLine || !dataLine) continue;
+          try {
+            const parsed = JSON.parse(dataLine);
+            if (eventLine === 'token' && typeof parsed.text === 'string') {
+              streamed += parsed.text;
+              setMessages((prev) =>
+                prev.map((m) => (m.messageId === aiMessageId ? { ...m, body: streamed } : m)),
+              );
+            } else if (eventLine === 'error') {
+              lastError = parsed.message ?? 'specialist error';
+            }
+          } catch {
+            // skip malformed event
+          }
+        }
+      }
+
+      if (lastError && !streamed) {
+        // Upstream couldn't answer — fall back to human handoff UI.
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === aiMessageId
+              ? {
+                  ...m,
+                  body:
+                    "I couldn't reach the specialist just now. A member of the team will pick this up shortly — you don't need to do anything.",
+                  authorName: 'BAV specialist',
+                }
+              : m,
+          ),
+        );
+        setEscalated(true);
+      } else if (!streamed) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.messageId === aiMessageId
+              ? { ...m, body: '…that one stumped me. Escalating to a human now.' }
+              : m,
+          ),
+        );
+        setEscalated(true);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'network error';
+      console.warn('[support] chat failed', msg);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.messageId === aiMessageId
+            ? {
+                ...m,
+                body:
+                  "I'm having trouble reaching my systems. A team member will join this thread shortly — no action needed on your side.",
+              }
+            : m,
+        ),
+      );
+      setEscalated(true);
+    } finally {
       setTyping(false);
-    }, 3500);
-    return () => clearTimeout(t);
-  }, [typing]);
+    }
+  };
 
   if (!open) {
     return (

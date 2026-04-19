@@ -19,8 +19,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { chunkMarkdown, type KbChunk } from '../../apps/web/lib/brain/chunker';
-import { embedBatch, shouldStub, stubEmbed, EMBED_DIM } from '../../apps/web/lib/brain/embed';
+import { chunkMarkdown, type KbChunk } from '../../apps/web/lib/brain/chunker.ts';
+import { embedBatch, shouldStub, stubEmbed, EMBED_DIM } from '../../apps/web/lib/brain/embed.ts';
 
 type IndexedChunk = KbChunk & { embedding: number[] };
 
