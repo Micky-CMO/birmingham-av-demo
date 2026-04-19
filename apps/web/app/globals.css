@@ -1823,3 +1823,272 @@ textarea {
     overflow-x: auto;
   }
 }
+
+/* ============================================================
+   BEGIN: batch-13 — campaigns, PWA, offline (Agent B13)
+   Added for /campaigns/*, /offline, PWA install banner.
+   Append-only; do not move above existing rules.
+   ============================================================ */
+
+/* Grid scaffolding used across the three campaign landers */
+.bav-section-x {
+  padding-left: 48px;
+  padding-right: 48px;
+}
+@media (max-width: 720px) {
+  .bav-section-x {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+.bav-hero-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 64px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .bav-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+.bav-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 48px 32px;
+}
+@media (max-width: 1024px) {
+  .bav-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 24px;
+  }
+}
+@media (max-width: 640px) {
+  .bav-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.bav-4-8 {
+  display: grid;
+  grid-template-columns: 4fr 8fr;
+  gap: 64px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .bav-4-8 {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+.bav-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 64px;
+}
+@media (max-width: 900px) {
+  .bav-steps {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+.bav-ticker {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .bav-ticker {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    text-align: left;
+  }
+}
+.bav-ticker-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .bav-ticker-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    text-align: left;
+  }
+}
+
+/* Refurb-week category rows (horizontal scroll) */
+.bav-cat-row {
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  gap: 48px;
+  align-items: start;
+  padding: 48px 0;
+  border-top: 1px solid var(--ink-10);
+}
+.bav-cat-row:last-child {
+  border-bottom: 1px solid var(--ink-10);
+}
+@media (max-width: 900px) {
+  .bav-cat-row {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+.bav-cat-scroll {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+.bav-cat-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.bav-cat-scroll::-webkit-scrollbar-thumb {
+  background: var(--ink-10);
+}
+.bav-mini-tile {
+  flex: 0 0 240px;
+}
+
+/* PWA install banner (fixed-bottom) */
+.bav-install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 110;
+  width: calc(100% - 32px);
+  max-width: 640px;
+  padding: 24px;
+  background: var(--paper);
+  border: 1px solid var(--ink-10);
+  box-shadow: 0 12px 40px rgba(23, 20, 15, 0.08);
+}
+.bav-install-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 32px;
+  align-items: center;
+}
+.bav-install-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .bav-install-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .bav-install-btns {
+    align-items: flex-start;
+  }
+}
+.bav-install-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--ink-60);
+  transition: color 300ms;
+}
+.bav-install-close:hover {
+  color: var(--ink);
+}
+
+/* Offline page helper grid */
+.bav-offline-helper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+}
+@media (max-width: 720px) {
+  .bav-offline-helper {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+/* Journal article (MDX) prose — keeps editorial typography in body copy */
+.bav-journal-prose {
+  max-width: 680px;
+}
+.bav-journal-prose p {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--ink);
+  margin: 0 0 24px 0;
+}
+.bav-journal-prose h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 300;
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 48px 0 20px;
+}
+.bav-journal-prose h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 40px 0 16px;
+}
+.bav-journal-prose code {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 14px;
+  background: rgba(23, 20, 15, 0.05);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.bav-journal-prose a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ink-10);
+  transition: text-decoration-color 300ms;
+}
+.bav-journal-prose a:hover {
+  text-decoration-color: var(--ink);
+}
+.bav-journal-prose blockquote {
+  margin: 32px 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--ink);
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 1.35;
+}
+.bav-journal-prose ul,
+.bav-journal-prose ol {
+  font-size: 17px;
+  line-height: 1.75;
+  padding-left: 20px;
+  margin: 0 0 24px 0;
+}
+.bav-journal-prose li {
+  margin: 0 0 10px 0;
+}
+.bav-journal-prose strong {
+  font-weight: 600;
+}
+
+/* ============================================================
+   END: batch-13
+   ============================================================ */
