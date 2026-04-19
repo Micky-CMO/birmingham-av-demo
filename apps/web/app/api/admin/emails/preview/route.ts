@@ -14,7 +14,16 @@ import RefundIssuedEmail from '@/emails/returns/RefundIssued';
 
 export const dynamic = 'force-dynamic';
 
-const SAMPLE = {
+const SAMPLE: {
+  welcome: Parameters<typeof WelcomeEmail>[0];
+  'password-reset': Parameters<typeof PasswordResetEmail>[0];
+  'business-application-received': Parameters<typeof BusinessApplicationReceivedEmail>[0];
+  'order-confirmation': Parameters<typeof OrderConfirmationEmail>[0];
+  dispatched: Parameters<typeof DispatchedEmail>[0];
+  delivered: Parameters<typeof DeliveredEmail>[0];
+  'return-authorised': Parameters<typeof ReturnAuthorisedEmail>[0];
+  'refund-issued': Parameters<typeof RefundIssuedEmail>[0];
+} = {
   welcome: {
     customerFirstName: 'Alex',
     verifyUrl: 'https://birmingham-av.com/auth/verify?token=abc123def456',
@@ -96,7 +105,7 @@ const SAMPLE = {
     expectedSettleWorkingDays: 3,
     accountUrl: 'https://birmingham-av.com/account/returns/BAV-RMA-260419-0012',
   },
-} as const;
+};
 
 const QuerySchema = z.object({
   slug: z.enum([
