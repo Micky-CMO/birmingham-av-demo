@@ -9,6 +9,8 @@ import {
   returnToStock,
 } from '@/lib/services/inventory';
 
+export const dynamic = 'force-dynamic';
+
 const Body = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('moved').optional(),

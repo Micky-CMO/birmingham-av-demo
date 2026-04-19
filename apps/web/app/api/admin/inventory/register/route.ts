@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { handleError, ok, parseBody } from '@/lib/json';
 import { registerComponent } from '@/lib/services/inventory';
 
+export const dynamic = 'force-dynamic';
+
 const Body = z.object({
   qrId: z.string().min(1),
   componentType: z.string().min(1),

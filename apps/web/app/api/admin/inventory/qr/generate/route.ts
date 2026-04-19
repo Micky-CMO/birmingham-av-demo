@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { handleError, ok, parseBody } from '@/lib/json';
 import { createQrBatch } from '@/lib/services/inventory';
 
+export const dynamic = 'force-dynamic';
+
 const Body = z.object({
   prefix: z
     .string()

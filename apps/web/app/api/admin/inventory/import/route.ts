@@ -5,6 +5,8 @@ import { handleError, ok } from '@/lib/json';
 import { ValidationError } from '@/lib/json';
 import { ZodError } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const Mapping = z.record(z.string(), z.string());
 
 type ParsedRow = Record<string, string>;
