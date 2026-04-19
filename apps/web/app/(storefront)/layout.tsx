@@ -3,6 +3,7 @@ import { Footer } from '@/components/shell/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { SupportWidget } from '@/components/support/SupportWidget';
 import { CookieConsent } from '@/components/legal/CookieConsent';
+import { InstallBanner } from '@/components/pwa/InstallBanner';
 import { activeBuildCount } from '@/lib/services/ops';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
       <CartDrawer />
       <SupportWidget />
       <CookieConsent />
+      <InstallBanner />
     </div>
   );
 }
