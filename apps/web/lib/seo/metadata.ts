@@ -12,6 +12,11 @@
  */
 
 export const BRAND = 'Birmingham AV' as const;
+// 62 is the brief's stated cap. Google Desktop truncates around 60 px-chars
+// (≈580px), which in practice allows 65–70 characters of mixed content. We
+// keep the brief's 62 and let clampTitle trim the modifier intelligently
+// rather than mid-word. Titles that would otherwise run to ~80 chars get
+// their trailing "12-Month Warranty" dropped first.
 export const MAX_TITLE = 62;
 export const MAX_DESCRIPTION = 160;
 export const MIN_DESCRIPTION = 140;
@@ -124,19 +129,52 @@ export function categoryKeyword(slug: string): CategoryKeyword {
 
 /**
  * Clip a title so the final rendered string (including " | Birmingham AV")
- * stays under MAX_TITLE. Prefers trimming the middle modifier first, then
- * the leading noun. Never clips `| Birmingham AV` itself.
+ * stays under MAX_TITLE.
+ *
+ * Two-stage trim:
+ *   1. Drop the last comma-clause ("12-Month Warranty") if doing so brings
+ *      the title under the cap. Reads cleaner than mid-word truncation.
+ *   2. Fall back to hard word-boundary truncation if the title is still
+ *      over-length (e.g. an extremely long product name).
+ *
+ * Never clips `| Birmingham AV`.
  */
 function clampTitle(main: string, suffix: string = ` | ${BRAND}`): string {
   const target = MAX_TITLE - suffix.length;
   if (main.length <= target) return `${main}${suffix}`;
-  const clipped = main.slice(0, target - 1).replace(/[\s,\-—]+$/, '');
+
+  // Stage 1: try dropping the last ", ..." clause.
+  const lastCommaIdx = main.lastIndexOf(',');
+  if (lastCommaIdx > 0 && lastCommaIdx <= target) {
+    const trimmed = main.slice(0, lastCommaIdx).replace(/[\s,\-—]+$/, '');
+    if (trimmed.length <= target) return `${trimmed}${suffix}`;
+  }
+
+  // Stage 2: hard truncate at the last whitespace before the cap.
+  const hard = main.slice(0, target);
+  const lastSpace = hard.lastIndexOf(' ');
+  const clipped = (lastSpace > target - 12 ? hard.slice(0, lastSpace) : hard).replace(
+    /[\s,\-—]+$/,
+    '',
+  );
   return `${clipped}${suffix}`;
 }
 
 function clampDescription(text: string): string {
   if (text.length <= MAX_DESCRIPTION) return text;
-  const clipped = text.slice(0, MAX_DESCRIPTION - 1).replace(/[\s,\-—.]+$/, '');
+  // Prefer the last full sentence that fits.
+  const upTo = text.slice(0, MAX_DESCRIPTION);
+  const lastFullStop = Math.max(upTo.lastIndexOf('. '), upTo.lastIndexOf('! '), upTo.lastIndexOf('? '));
+  if (lastFullStop > MAX_DESCRIPTION * 0.6) {
+    return `${upTo.slice(0, lastFullStop + 1).trim()}`;
+  }
+  // Fall back to word boundary.
+  const lastSpace = upTo.lastIndexOf(' ');
+  const clipped =
+    (lastSpace > MAX_DESCRIPTION - 20 ? upTo.slice(0, lastSpace) : upTo).replace(
+      /[\s,\-—.]+$/,
+      '',
+    );
   return `${clipped}.`;
 }
 
@@ -268,16 +306,19 @@ export interface SeoBuilder {
 }
 
 /**
- * "Jordan Malik — Elite PC Builder at Birmingham AV"
+ * "Jordan Malik — Elite PC Builder | Birmingham AV"
+ *
+ * Brand is in the suffix; avoid double-listing it in the main clause.
  */
 export function buildBuilderTitle(builder: SeoBuilder): string {
   const tierLabel = capitaliseTier(builder.tier);
-  const main = `${builder.displayName} — ${tierLabel} PC Builder at ${BRAND}`;
+  const main = `${builder.displayName} — ${tierLabel} PC Builder`;
   return clampTitle(main);
 }
 
 export function buildBuilderDescription(builder: SeoBuilder): string {
   const tierLabel = capitaliseTier(builder.tier);
+  const article = /^[aeiou]/i.test(tierLabel) ? 'an' : 'a';
   const years =
     typeof builder.yearsBuilding === 'number' && builder.yearsBuilding > 0
       ? `${builder.yearsBuilding} years`
@@ -287,7 +328,7 @@ export function buildBuilderDescription(builder: SeoBuilder): string {
       ? ` Specialises in ${builder.specialities.slice(0, 3).join(', ').toLowerCase()}.`
       : '';
 
-  const base = `${builder.displayName} is a ${tierLabel} PC builder at ${BRAND}, hand-assembling new and refurbished machines in the UK for ${years}.${specialities} See every build signed ${builder.builderCode}.`;
+  const base = `${builder.displayName} is ${article} ${tierLabel} PC builder at ${BRAND}, hand-assembling new and refurbished machines in the UK for ${years}.${specialities} See every build signed ${builder.builderCode}.`;
   return clampDescription(base);
 }
 
