@@ -11,8 +11,14 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!pathname.startsWith('/admin')) return NextResponse.next();
 
+  // Expose the pathname to Server Components via a request header. The admin
+  // shell uses this to highlight the active nav tab without every page having
+  // to pass its own prop.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+
   if (process.env.BAV_DEMO_MODE === 'true') {
-    const res = NextResponse.next();
+    const res = NextResponse.next({ request: { headers: requestHeaders } });
     res.cookies.set('bav_staff', '1', { httpOnly: true, sameSite: 'lax', path: '/' });
     return res;
   }
@@ -24,7 +30,7 @@ export function middleware(request: NextRequest) {
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
