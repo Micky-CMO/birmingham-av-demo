@@ -91,6 +91,7 @@ import BusinessApplicationReceivedEmail, {
 import OrderConfirmationEmail, { type OrderConfirmationProps } from '@/emails/commerce/OrderConfirmation';
 import DispatchedEmail, { type DispatchedProps } from '@/emails/commerce/Dispatched';
 import DeliveredEmail, { type DeliveredProps } from '@/emails/commerce/Delivered';
+import AbandonedCartEmail, { type AbandonedCartProps } from '@/emails/commerce/AbandonedCart';
 import ReturnAuthorisedEmail, { type ReturnAuthorisedProps } from '@/emails/returns/ReturnAuthorised';
 import RefundIssuedEmail, { type RefundIssuedProps } from '@/emails/returns/RefundIssued';
 
@@ -138,6 +139,16 @@ export const bavEmail = {
       tags: [
         { name: 'category', value: 'commerce-dispatched' },
         { name: 'orderNumber', value: props.orderNumber },
+      ],
+    }),
+
+  abandonedCart: (to: string, props: AbandonedCartProps) =>
+    sendEmail({
+      to,
+      subject: `Still in your cart · ${props.items[0]?.title ?? 'your build'}`,
+      template: AbandonedCartEmail(props),
+      tags: [
+        { name: 'category', value: 'commerce-abandoned-cart' },
       ],
     }),
 
