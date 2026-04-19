@@ -91,6 +91,42 @@ const MEGA_TABS: MegaTab[] = [
     },
   },
   {
+    key: 'hardware',
+    label: 'Hardware',
+    href: '/shop/parts',
+    explore: {
+      heading: 'Explore Hardware',
+      items: [
+        { label: 'Graphics cards', href: '/shop/parts?type=gpu' },
+        { label: 'Processors', href: '/shop/parts?type=cpu' },
+        { label: 'Motherboards', href: '/shop/parts?type=motherboard' },
+        { label: 'RAM + memory', href: '/shop/parts?type=ram' },
+        { label: 'PC cases', href: '/shop/parts?type=case' },
+        { label: 'Cooling', href: '/shop/parts?type=cooling' },
+        { label: 'Power supplies', href: '/shop/power-supply-chargers' },
+      ],
+    },
+    shop: {
+      heading: 'Shop Hardware',
+      items: [
+        { label: 'Shop all Hardware', href: '/shop/parts' },
+        { label: 'Latest arrivals', href: '/shop/parts?sort=newest' },
+        { label: 'Refurbished GPUs', href: '/shop/parts?type=gpu&condition=refurbished' },
+        { label: 'Under £200', href: '/shop/parts?priceMax=200' },
+        { label: 'Build a PC instead', href: '/configurator' },
+      ],
+    },
+    more: {
+      heading: 'More from Hardware',
+      items: [
+        { label: 'Compatibility check', href: '/support/compatibility' },
+        { label: 'AV Care warranty', href: '/av-care' },
+        { label: 'Trade-in your part', href: '/trade-in' },
+        { label: 'Meet the builders', href: '/builders' },
+      ],
+    },
+  },
+  {
     key: 'displays',
     label: 'Displays',
     href: '/shop/monitors',
@@ -180,42 +216,6 @@ const MEGA_TABS: MegaTab[] = [
         { label: 'Data recovery', href: '/support/data-recovery' },
         { label: 'Trade enquiries', href: '/business' },
         { label: 'Spec sheets', href: '/support/spec-sheets' },
-      ],
-    },
-  },
-  {
-    key: 'hardware',
-    label: 'Hardware',
-    href: '/shop/parts',
-    explore: {
-      heading: 'Explore Hardware',
-      items: [
-        { label: 'Graphics cards', href: '/shop/parts?type=gpu' },
-        { label: 'Processors', href: '/shop/parts?type=cpu' },
-        { label: 'Motherboards', href: '/shop/parts?type=motherboard' },
-        { label: 'RAM + memory', href: '/shop/parts?type=ram' },
-        { label: 'PC cases', href: '/shop/parts?type=case' },
-        { label: 'Cooling', href: '/shop/parts?type=cooling' },
-        { label: 'Power supplies', href: '/shop/power-supply-chargers' },
-      ],
-    },
-    shop: {
-      heading: 'Shop Hardware',
-      items: [
-        { label: 'Shop all Hardware', href: '/shop/parts' },
-        { label: 'Latest arrivals', href: '/shop/parts?sort=newest' },
-        { label: 'Refurbished GPUs', href: '/shop/parts?type=gpu&condition=refurbished' },
-        { label: 'Under £200', href: '/shop/parts?priceMax=200' },
-        { label: 'Build a PC instead', href: '/configurator' },
-      ],
-    },
-    more: {
-      heading: 'More from Hardware',
-      items: [
-        { label: 'Compatibility check', href: '/support/compatibility' },
-        { label: 'AV Care warranty', href: '/av-care' },
-        { label: 'Trade-in your part', href: '/trade-in' },
-        { label: 'Meet the builders', href: '/builders' },
       ],
     },
   },
