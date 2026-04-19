@@ -2,6 +2,7 @@ import { Nav } from '@/components/shell/Nav';
 import { Footer } from '@/components/shell/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { SupportWidget } from '@/components/support/SupportWidget';
+import { CookieConsent } from '@/components/legal/CookieConsent';
 import { activeBuildCount } from '@/lib/services/ops';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
       <Footer activeBuilds={activeBuilds} version="v0.1.0" />
       <CartDrawer />
       <SupportWidget />
+      <CookieConsent />
     </div>
   );
 }
