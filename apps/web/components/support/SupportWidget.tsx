@@ -1,143 +1,311 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { useRef, useState } from 'react';
-import { Button, GlassCard, Input } from '@/components/ui';
-import { cn } from '@/lib/cn';
+import { useEffect, useRef, useState } from 'react';
+import { SUPPORT_CHAT_OPEN_EVENT } from '@/components/editorial/StartChatButton';
 
-type Message = { id: string; role: 'user' | 'assistant' | 'system'; body: string };
+// =============================================================================
+// SupportWidget — ported from artefact 24 (batch 5).
+//
+// Floating chat widget that sits bottom-right on every storefront page. The
+// shell CSS (.cw-*) lives in globals.css under the
+// "Editorial + Legal templates" section. MessageBlock and ReplyBox mirror the
+// structure from artefact 17 (return detail); they are scoped to this file
+// since they are not reused elsewhere yet.
+// =============================================================================
+
+type Message = {
+  messageId: string;
+  author: 'customer' | 'ai' | 'human';
+  authorName: string;
+  timestamp: string;
+  body: string;
+  confidence?: number;
+};
+
+function formatDateTime(d: string): string {
+  const dt = new Date(d);
+  return (
+    dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) +
+    ' · ' +
+    dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  );
+}
+
+function MessageBlock({ message }: { message: Message }) {
+  const m = message;
+  const isCustomer = m.author === 'customer';
+  const isAI = m.author === 'ai';
+  const isHuman = m.author === 'human';
+
+  return (
+    <div
+      className="grid gap-6 border-t border-ink-10 py-6"
+      style={{ gridTemplateColumns: '180px 1fr' }}
+    >
+      <div>
+        <div
+          className="mb-1.5 font-mono uppercase text-ink-60"
+          style={{ fontSize: 11, letterSpacing: '0.14em' }}
+        >
+          {isCustomer && '— You'}
+          {isAI && '— Triage'}
+          {isHuman && '— Staff'}
+        </div>
+        <div className="mb-1 text-ink" style={{ fontSize: 13 }}>
+          {m.authorName}
+        </div>
+        <div className="font-mono text-ink-60" style={{ fontSize: 11 }}>
+          {formatDateTime(m.timestamp)}
+        </div>
+      </div>
+      <div>
+        <p
+          className="m-0 text-ink"
+          style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 560 }}
+        >
+          {m.body}
+        </p>
+        {isAI && typeof m.confidence === 'number' && (
+          <div
+            className="mt-3.5 font-mono uppercase text-ink-60"
+            style={{ fontSize: 11, letterSpacing: '0.14em' }}
+          >
+            Confidence {(m.confidence * 100).toFixed(0)}%
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReplyBox({ onSend }: { onSend: (body: string) => void }) {
+  const [val, setVal] = useState('');
+  const trimmed = val.trim();
+  return (
+    <div>
+      <div className="bav-label mb-3 text-ink-60">— Reply</div>
+      <textarea
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        placeholder="Anything else we should know?"
+        rows={5}
+        className="bav-field w-full resize-y border border-ink-10 bg-transparent font-sans text-ink"
+        style={{
+          padding: '18px 20px',
+          fontSize: 14,
+          lineHeight: 1.6,
+          outline: 'none',
+        }}
+      />
+      <div className="mt-3 flex justify-end">
+        <button
+          disabled={trimmed.length === 0}
+          className="bav-cta-secondary"
+          onClick={() => {
+            if (trimmed.length === 0) return;
+            onSend(trimmed);
+            setVal('');
+          }}
+          style={{
+            width: 'auto',
+            padding: '14px 32px',
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            opacity: trimmed.length === 0 ? 0.4 : 1,
+            cursor: trimmed.length === 0 ? 'not-allowed' : 'pointer',
+          }}
+        >
+          Send reply
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const INITIAL_MESSAGES: Message[] = [
+  {
+    messageId: 'm1',
+    author: 'ai',
+    authorName: 'Triage · assistant',
+    timestamp: '2026-04-19T10:14:00Z',
+    body:
+      "Hello. I'm the triage assistant. Tell me what's happening and I'll either answer or hand you to a colleague. If you have an order number to hand, it speeds things up.",
+    confidence: 0.92,
+  },
+];
 
 export function SupportWidget() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      body: 'Hello. I can help with orders, specs, returns, and shipping. How can I help today?',
-    },
-  ]);
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
-  const ticketId = useRef<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [escalated, setEscalated] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  async function send() {
-    if (!draft.trim() || sending) return;
-    const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', body: draft.trim() };
-    setMessages((m) => [...m, userMsg]);
-    setDraft('');
-    setSending(true);
-    try {
-      const res = await fetch('/api/support/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketId: ticketId.current ?? undefined, body: userMsg.body }),
-      });
-      const data = (await res.json()) as {
-        ticketId?: string;
-        reply?: string;
-        escalated?: boolean;
-        error?: { message: string };
-      };
-      if (data.ticketId) ticketId.current = data.ticketId;
-      if (data.reply) setMessages((m) => [...m, { id: `a-${Date.now()}`, role: 'assistant', body: data.reply! }]);
-      if (data.escalated)
-        setMessages((m) => [
-          ...m,
-          { id: `s-${Date.now()}`, role: 'system', body: 'Escalated to our team. Someone will reply here shortly.' },
-        ]);
-      if (data.error)
-        setMessages((m) => [...m, { id: `s-${Date.now()}`, role: 'system', body: `Chat is offline (${data.error!.message})` }]);
-    } catch (e) {
-      setMessages((m) => [
-        ...m,
-        { id: `s-${Date.now()}`, role: 'system', body: 'Network error. Try again in a moment.' },
-      ]);
-    } finally {
-      setSending(false);
+  // auto-scroll to bottom on new messages / typing change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
+  }, [messages, typing, open]);
+
+  // External open trigger — fired from any "Start a chat" CTA.
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener(SUPPORT_CHAT_OPEN_EVENT, handler);
+    return () => window.removeEventListener(SUPPORT_CHAT_OPEN_EVENT, handler);
+  }, []);
+
+  const handleSend = (body: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        messageId: 'm' + (prev.length + 1),
+        author: 'customer',
+        authorName: 'You',
+        timestamp: new Date().toISOString(),
+        body,
+      },
+    ]);
+    // Demo escalation flow: after the first customer message, show an
+    // escalation banner and have a member of staff join ~3.5s later.
+    setTyping(true);
+    setEscalated(true);
+  };
+
+  useEffect(() => {
+    if (!typing) return;
+    const t = setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          messageId: 'm' + (prev.length + 1),
+          author: 'human',
+          authorName: 'Leila · support',
+          timestamp: new Date().toISOString(),
+          body:
+            "Hi, Leila here. I've picked this up from the triage assistant. Give me a few minutes to check and I'll be back with an answer or a next step.",
+        },
+      ]);
+      setTyping(false);
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [typing]);
+
+  if (!open) {
+    return (
+      <button
+        className="cw-trigger"
+        onClick={() => setOpen(true)}
+        aria-label="Open support chat"
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinecap="square"
+        >
+          <path d="M4 5 L20 5 L20 17 L12 17 L7 21 L7 17 L4 17 Z" />
+        </svg>
+      </button>
+    );
   }
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label="Open support chat"
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-green text-white shadow-ring-green hover:bg-brand-green-600 sm:bottom-5 sm:right-5 sm:h-14 sm:w-14"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <ChatIcon />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.98 }}
-            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-4 bottom-[4.5rem] z-40 sm:inset-x-auto sm:bottom-24 sm:right-5 sm:w-[360px]"
+    <div className="cw-panel" role="dialog" aria-label="Support chat">
+      {/* Header */}
+      <div className="cw-header">
+        <div>
+          <div
+            className="font-display font-light"
+            style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.01em' }}
           >
-            <GlassCard className="flex h-[72dvh] max-h-[560px] flex-col overflow-hidden bg-white/95 sm:h-[520px] dark:bg-obsidian-900/95">
-              <header className="flex items-center justify-between border-b border-ink-300/60 px-4 py-3 dark:border-obsidian-500/60">
-                <div>
-                  <div className="text-small font-medium">Birmingham AV support</div>
-                  <div className="text-caption text-ink-500">AI + humans, any time.</div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Close chat"
-                  onClick={() => setOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-md text-xl text-ink-500 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-obsidian-800 dark:hover:text-ink-50"
-                >
-                  &times;
-                </button>
-              </header>
-              <div className="flex-1 space-y-3 overflow-y-auto p-4">
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={cn(
-                      'max-w-[85%] rounded-lg px-3 py-2 text-small',
-                      m.role === 'user' && 'ml-auto bg-brand-green text-white',
-                      m.role === 'assistant' && 'bg-ink-100 text-ink-900 dark:bg-obsidian-800 dark:text-ink-50',
-                      m.role === 'system' && 'mx-auto text-center text-caption text-ink-500',
-                    )}
-                  >
-                    {m.body}
-                  </div>
-                ))}
-                {sending && <div className="ml-1 text-caption text-ink-500">AI is typing...</div>}
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void send();
-                }}
-                className="flex gap-2 border-t border-ink-300/60 p-3 dark:border-obsidian-500/60"
+            Support <span className="bav-italic">chat</span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2.5">
+            <span className="bav-pulse" aria-hidden="true" />
+            <span
+              className="font-mono uppercase text-ink-60"
+              style={{ fontSize: 11, letterSpacing: '0.14em' }}
+            >
+              Open · replies within minutes
+            </span>
+          </div>
+        </div>
+        <button
+          className="cw-close"
+          onClick={() => setOpen(false)}
+          aria-label="Close support chat"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeLinecap="square"
+          >
+            <path d="M6 9 L12 15 L18 9" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Escalation banner */}
+      {escalated && (
+        <div className="cw-esc-banner">
+          <div className="bav-label mb-1.5 text-ink-60">
+            — Escalated to a human
+          </div>
+          <p
+            className="m-0 font-sans text-ink"
+            style={{ fontSize: 13, lineHeight: 1.55 }}
+          >
+            A team member will join this thread shortly. The triage assistant
+            stays on in case it can help in the meantime.
+          </p>
+        </div>
+      )}
+
+      {/* Thread */}
+      <div className="cw-thread" ref={scrollRef}>
+        {messages.map((m) => (
+          <MessageBlock key={m.messageId} message={m} />
+        ))}
+
+        {typing && (
+          <div className="cw-typing">
+            <div>
+              <div
+                className="mb-1.5 font-mono uppercase text-ink-60"
+                style={{ fontSize: 11, letterSpacing: '0.14em' }}
               >
-                <Input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Ask about anything"
-                  disabled={sending}
-                />
-                <Button type="submit" disabled={sending || !draft.trim()}>
-                  Send
-                </Button>
-              </form>
-            </GlassCard>
-          </motion.div>
+                — Staff
+              </div>
+              <div className="text-ink-30" style={{ fontSize: 13 }}>
+                Joining now…
+              </div>
+            </div>
+            <div style={{ paddingTop: 2 }}>
+              <span className="dots" aria-label="Typing">
+                <span className="dot" />
+                <span className="dot" />
+                <span className="dot" />
+              </span>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
-    </>
+      </div>
+
+      {/* Reply */}
+      <div className="cw-reply">
+        <ReplyBox onSend={handleSend} />
+      </div>
+    </div>
   );
 }
 
-function ChatIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 12a8 8 0 1 1-3-6.2L21 4l-1 4.5A8 8 0 0 1 21 12Z" strokeLinejoin="round" />
-    </svg>
-  );
-}
+export default SupportWidget;
